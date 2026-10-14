@@ -101,9 +101,9 @@ to add the gauges to your desktop; turn it off with the same switch or
 add **Alien Thunder** through Plasma's **Add Widgets** to use the same digital or
 analog readings on the desktop. **General → Show on the desktop** selects readings
 independently for each widget, without changing the panel or floating bar. Choose
-**Desktop gauge style** for its own analog or digital display. The gauges stay
-side by side in one horizontal bar, just like the overlay; resizing in Plasma's
-edit mode scales the whole strip, without wrapping into a grid. Download and upload
+**Desktop gauge style** for its own analog or digital display. **Desktop orientation**
+chooses a horizontal strip (the default, like the overlay) or a vertical stack.
+Resizing in Plasma's edit mode scales the whole strip. Download and upload
 can be included in this desktop bar too.
 
 Select **Download** and **Upload** under **Show in the overlay** to put network

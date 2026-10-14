@@ -181,6 +181,15 @@ msgstr ""
 msgid "Desktop gauge style:"
 msgstr ""
 
+msgid "Desktop orientation:"
+msgstr ""
+
+msgid "Horizontal"
+msgstr ""
+
+msgid "Vertical"
+msgstr ""
+
 msgid "Panel gauge style:"
 msgstr ""
 

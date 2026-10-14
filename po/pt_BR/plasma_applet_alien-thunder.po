@@ -186,6 +186,15 @@ msgstr "Mostradores da sobreposição e da rede:"
 msgid "Desktop gauge style:"
 msgstr "Estilo dos mostradores da área de trabalho:"
 
+msgid "Desktop orientation:"
+msgstr "Orientação na área de trabalho:"
+
+msgid "Horizontal"
+msgstr "Horizontal"
+
+msgid "Vertical"
+msgstr "Vertical"
+
 msgid "Panel gauge style:"
 msgstr "Estilo dos mostradores da barra de tarefas:"
 

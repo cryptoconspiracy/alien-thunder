@@ -4,6 +4,8 @@ import org.kde.kirigami as Kirigami
 import org.kde.kcmutils as KCM
 
 KCM.SimpleKCM {
+    property string cfg_desktop_orientation: "horizontal"
+    property string cfg_desktop_orientationDefault
     property string cfg_panel_style: "digital"
     property string cfg_panel_styleDefault
     property alias cfg_panel_download: panelDownload.checked
@@ -72,6 +74,12 @@ KCM.SimpleKCM {
     property bool cfg_overlay_ram_gbDefault
 
     Kirigami.FormLayout {
+        QQC2.ComboBox {
+            Kirigami.FormData.label: i18n("Desktop orientation:")
+            model: [i18n("Horizontal"), i18n("Vertical")]
+            currentIndex: cfg_desktop_orientation === "vertical" ? 1 : 0
+            onActivated: cfg_desktop_orientation = currentIndex === 1 ? "vertical" : "horizontal"
+        }
         QQC2.ComboBox {
             Kirigami.FormData.label: i18n("Desktop gauge style:")
             model: [i18n("Digital"), i18n("Analog · Audi style")]

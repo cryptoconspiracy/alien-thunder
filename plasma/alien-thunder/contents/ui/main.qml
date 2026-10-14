@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Controls as QQC2
 import org.kde.plasma.plasmoid
@@ -323,14 +324,17 @@ PlasmoidItem {
         Item {
             Layout.minimumWidth: 180
             Layout.minimumHeight: 40
-            Layout.preferredWidth: Math.max(180, desktopBar.implicitWidth)
-            Layout.preferredHeight: desktopBar.implicitHeight
+            Layout.preferredWidth: Math.max(180, Math.min(desktopBar.implicitWidth, Screen.width * 0.9))
+            Layout.preferredHeight: Math.min(desktopBar.implicitHeight, Screen.height * 0.8)
+            Layout.maximumWidth: desktopBar.vertical ? Math.max(180, desktopBar.implicitWidth * 2.5) : Infinity
+            Layout.maximumHeight: desktopBar.vertical ? Infinity : Math.max(40, desktopBar.implicitHeight * 2.5)
             BarContent {
                 id: desktopBar
                 width: implicitWidth
                 height: implicitHeight
                 showClose: false
                 showHandle: false
+                vertical: Plasmoid.configuration.desktop_orientation === "vertical"
                 scale: Math.min(parent.width / width, parent.height / height)
                 transformOrigin: Item.TopLeft
                 x: (parent.width - width * scale) / 2

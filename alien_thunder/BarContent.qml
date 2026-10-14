@@ -7,6 +7,7 @@ Item {
     required property var backend
     property bool showClose: true
     property bool showHandle: true
+    property bool vertical: false
     readonly property bool analog: backend.config.style === "analog"
     signal closeClicked()
 
@@ -46,7 +47,7 @@ Item {
     }
 
     implicitWidth: row.implicitWidth
-    implicitHeight: analog ? 198 : 56
+    implicitHeight: row.implicitHeight
 
     function maximum(key) {
         if (isNetwork(key)) {
@@ -84,19 +85,20 @@ Item {
         border.color: "#33ff6a00"
     }
 
-    Row {
+    Grid {
         id: row
-        height: parent.height
+        columns: content.vertical ? 1 : content.backend.items.length + 2
         leftPadding: 6
         rightPadding: content.showClose ? 4 : 12
 
         Text {
             visible: content.showHandle
-            anchors.verticalCenter: parent.verticalCenter
             width: 14
+            height: content.analog ? 198 : 56
             text: "⋮"
             font.pixelSize: 22
             horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
             color: "#5c6b77"
         }
 
@@ -105,10 +107,10 @@ Item {
             delegate: Row {
                 required property string modelData
                 required property int index
-                height: row.height
+                height: content.analog ? 198 : 56
 
                 Rectangle {
-                    visible: index > 0
+                    visible: index > 0 && !content.vertical
                     width: 1
                     height: parent.height - 20
                     anchors.verticalCenter: parent.verticalCenter
@@ -213,7 +215,7 @@ Item {
         Item {
             visible: content.showClose
             width: 30
-            height: parent.height
+            height: content.analog ? 198 : 56
 
             Rectangle {
                 anchors.centerIn: parent

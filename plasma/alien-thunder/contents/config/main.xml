@@ -5,6 +5,7 @@
   <kcfgfile name=""/>
   <group name="General">
     <entry name="desktop_style" type="String"><default>analog</default></entry>
+    <entry name="desktop_orientation" type="String"><default>horizontal</default></entry>
     <entry name="panel_style" type="String"><default>digital</default></entry>
     <entry name="panel_download" type="Bool"><default>false</default></entry>
     <entry name="panel_upload" type="Bool"><default>false</default></entry>

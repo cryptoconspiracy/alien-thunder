@@ -46,7 +46,7 @@ TestCase {
         const backend = bar.backend
         bar.backend = {config: {style: "digital", items: {cpu_load: true}},
             values: backend.values, items: backend.items, labels: backend.labels}
-        compare(bar.implicitHeight, 56)
+        tryCompare(bar, "implicitHeight", 56)
         compare(findChild(bar, "networkCollector").active, false)
     }
     function test_networkTenSecondMovingAverage() {
@@ -76,6 +76,24 @@ TestCase {
         compare(traffic.uploadAverage, 50)
         compare(traffic.history.length, 45)
         compare(traffic.gaugeHistory.length, 45)
+    }
+    function test_desktopOrientation_data() {
+        return [{tag: "analog", style: "analog", height: 198},
+            {tag: "digital", style: "digital", height: 56}]
+    }
+    function test_desktopOrientation(data) {
+        const bar = createBar(data.style, {cpu_load: true, download: true, upload: true})
+        bar.showClose = false
+        bar.showHandle = false
+        wait(50) // Grid updates its implicit size during the next layout pass.
+        const horizontalWidth = bar.implicitWidth
+        compare(bar.implicitHeight, data.height)
+        bar.vertical = true
+        tryCompare(bar, "implicitHeight", data.height * 3)
+        verify(bar.implicitWidth < horizontalWidth)
+        bar.vertical = false
+        tryCompare(bar, "implicitHeight", data.height)
+        tryCompare(bar, "implicitWidth", horizontalWidth)
     }
     function test_networkFormatsAndAvailability_data() {
         return [{tag: "digital", style: "digital"}, {tag: "analog", style: "analog"}]
