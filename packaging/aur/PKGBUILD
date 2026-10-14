@@ -11,7 +11,7 @@ makedepends=('gettext')
 optdepends=('plasma-workspace: the panel widget' 'libksysguard: per-application network widget')
 install=alien-thunder.install
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('3ac09e1f6eb385beecd8344742d6e329adc0c8965cd9c7a75213250b985d7076')
+sha256sums=('d21d59a800a1390ff0a69782de5f0c10305720c0bd928b8cbc3f05bfd5154313')
 
 build() {
   cd "$pkgname-$pkgver"
