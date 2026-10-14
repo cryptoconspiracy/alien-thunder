@@ -70,6 +70,14 @@
   </supports>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.3.0" date="2026-10-14">
+      <description>
+        <ul>
+          <li>Add configurable desktop and panel gauges with smoothed network overlays</li>
+          <li>packages/: on Arch, install the downloaded file, since pacman wants a trusted signature for a URL</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.2.2" date="2026-10-02">
       <description>
         <ul>

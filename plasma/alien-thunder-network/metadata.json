@@ -9,7 +9,7 @@
         "Category": "System Information",
         "Authors": [{ "Name": "Dan B" }],
         "License": "MIT",
-        "Version": "1.2.2",
+        "Version": "1.3.0",
         "Website": "https://github.com/cryptoconspiracy/alien-thunder"
     },
     "KPackageStructure": "Plasma/Applet",

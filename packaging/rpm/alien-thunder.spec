@@ -1,5 +1,5 @@
 Name:           alien-thunder
-Version:        1.2.2
+Version:        1.3.0
 Release:        1%{?dist}
 Summary:        Per-key RGB, G-Mode and fan and temperature readouts for Alienware laptops
 License:        MIT
@@ -79,6 +79,10 @@ rm -f %{buildroot}%{_datadir}/licenses/%{name}/LICENSE
 %{_datadir}/plasma/plasmoids/alien-thunder-network/
 
 %changelog
+* Wed Oct 14 2026 Dan B <unknown@cryptoconspiracy.io> - 1.3.0-1
+- Add configurable desktop and panel gauges with smoothed network overlays
+- packages/: on Arch, install the downloaded file, since pacman wants a trusted signature for a URL
+
 * Fri Oct 02 2026 Dan B <unknown@cryptoconspiracy.io> - 1.2.2-1
 - packages/: a package to download for each distribution, versioned, and openSUSE Leap 16.0
 - Debian policy: lintian-clean package, a man page, and the app in /usr/share
