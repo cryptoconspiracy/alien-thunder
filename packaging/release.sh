@@ -49,7 +49,7 @@ author="Dan B <unknown@cryptoconspiracy.io>"
 
 step "version $version in the app, the widget and the packages"
 sed -i "s/^__version__ = \".*\"/__version__ = \"$version\"/" alien_thunder/__init__.py
-sed -i "s/\"Version\": \"[^\"]*\"/\"Version\": \"$version\"/" plasma/alien-thunder/metadata.json
+sed -i "s/\"Version\": \"[^\"]*\"/\"Version\": \"$version\"/" plasma/*/metadata.json
 sed -i "s/^Version:        .*/Version:        $version/" packaging/rpm/alien-thunder.spec
 {
   printf '* %s %s - %s-1\n' "$today_rpm" "$author" "$version"
@@ -84,9 +84,10 @@ git tag -a "v$version" -m "Alien Thunder $version"
 step "panel widget for the release and the KDE Store"
 make -s locales
 (cd plasma/alien-thunder && zip -qr "$work/alien-thunder-$version.plasmoid" .)
+(cd plasma/alien-thunder-network && zip -qr "$work/alien-thunder-network-$version.plasmoid" .)
 notes="$(printf -- '- %s\n' "${changes[@]}")
 
-\`alien-thunder-$version.plasmoid\` is the panel widget alone, for the KDE Store; it needs the app installed."
+The two \`.plasmoid\` files are the sensor and network widgets for the KDE Store; they need the app installed."
 
 if [[ $dry == 1 ]]; then
   git archive --prefix="alien-thunder-$version/" "v$version" | gzip -n > "$work/alien-thunder-$version.tar.gz"
@@ -95,7 +96,7 @@ if [[ $dry == 1 ]]; then
 else
   step "push and GitHub release"
   git push -q origin main "v$version"
-  gh release create "v$version" "$work/alien-thunder-$version.plasmoid" --repo "$gh_repo" \
+  gh release create "v$version" "$work/alien-thunder-$version.plasmoid" "$work/alien-thunder-network-$version.plasmoid" --repo "$gh_repo" \
     --title "Alien Thunder $version" --notes "$notes" >/dev/null
   curl -fsSL -o "$work/alien-thunder-$version.tar.gz" \
     "https://github.com/$gh_repo/archive/refs/tags/v$version.tar.gz"
@@ -154,5 +155,6 @@ echo "KDE Store: upload $work/alien-thunder-$version.plasmoid by hand at https:/
 if [[ $dry != 1 ]]; then
   mkdir -p "$HOME/Downloads/alien-thunder-kde-store"
   cp "$work/alien-thunder-$version.plasmoid" "$HOME/Downloads/alien-thunder-kde-store/"
+  cp "$work/alien-thunder-network-$version.plasmoid" "$HOME/Downloads/alien-thunder-kde-store/"
   echo "  (a copy is in ~/Downloads/alien-thunder-kde-store)"
 fi

@@ -173,3 +173,56 @@ msgstr "Geral"
 #: plasma/alien-thunder/contents/config/config.qml:11
 msgid "Support"
 msgstr "Apoie"
+
+msgid "Network widget"
+msgstr "Widget de rede"
+
+msgid "Upload and download by application on your desktop."
+msgstr "Upload e download por aplicativo na sua área de trabalho."
+
+msgid "Overlay and network gauges:"
+msgstr "Mostradores da sobreposição e da rede:"
+
+msgid "Desktop gauge style:"
+msgstr "Estilo dos mostradores da área de trabalho:"
+
+msgid "Panel gauge style:"
+msgstr "Estilo dos mostradores da barra de tarefas:"
+
+msgid "Gauge style:"
+msgstr "Estilo dos mostradores:"
+
+msgid "Digital"
+msgstr "Digital"
+
+msgid "Show on the desktop:"
+msgstr "Mostrar na área de trabalho:"
+
+msgid "Choose desktop readings in the widget settings."
+msgstr "Escolha os indicadores da área de trabalho nas configurações do widget."
+
+msgid "Overlay size:"
+msgstr "Tamanho da barra:"
+
+msgid "Overlay size"
+msgstr "Tamanho da barra"
+
+msgid "Reset overlay size"
+msgstr "Restaurar tamanho da barra"
+
+msgid "Applied on release; limited to the screen size."
+msgstr "Aplicado ao soltar; limitado ao tamanho da tela."
+
+msgid "Could not change or read the overlay size."
+msgstr "Não foi possível alterar ou consultar o tamanho da barra."
+
+msgid "Analog · Audi style"
+msgstr "Analógico · estilo Audi"
+msgid "Desktop gauges"
+msgstr "Mostradores na área de trabalho"
+
+msgid "Download"
+msgstr "Download"
+
+msgid "Upload"
+msgstr "Upload"

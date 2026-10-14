@@ -1,4 +1,13 @@
 __pycache__/
+alien_thunder/NetworkData.qml
+plasma/alien-thunder/contents/ui/BarContent.qml
+plasma/alien-thunder/contents/ui/NetworkData.qml
 *.pyc
 alien_thunder/locale/
 plasma/alien-thunder/contents/locale/
+plasma/alien-thunder-network/contents/locale/
+plasma/alien-thunder-network/contents/ui/AnalogDial.qml
+plasma/alien-thunder/contents/ui/AnalogDial.qml
+plasma/*/contents/ui/AlertLed.qml
+plasma/alien-thunder-network/contents/ui/configSupport.qml
+plasma/alien-thunder-network/contents/images/donate-*.png

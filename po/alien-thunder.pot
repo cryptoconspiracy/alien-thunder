@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: alien-thunder\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 21:20-0300\n"
+"POT-Creation-Date: 2026-10-04 10:37-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -75,7 +75,7 @@ msgstr ""
 msgid "failed; the service will try again (see 'status')"
 msgstr ""
 
-#: alien_thunder/cli.py:79 alien_thunder/gui.py:1076
+#: alien_thunder/cli.py:79 alien_thunder/gui.py:1185
 msgid "not found"
 msgstr ""
 
@@ -158,7 +158,6 @@ msgstr ""
 msgid "Bitcoin"
 msgstr ""
 
-#. One address takes donations on every EVM network Vurto Swap supports.
 #: alien_thunder/donate.py:8
 msgid "EVM networks"
 msgstr ""
@@ -280,7 +279,7 @@ msgid ""
 "Turbo: fans at full speed and the performance power profile (same as Fn+F1)"
 msgstr ""
 
-#: alien_thunder/gui.py:415 alien_thunder/gui.py:582
+#: alien_thunder/gui.py:415 alien_thunder/gui.py:583
 msgid "Colors"
 msgstr ""
 
@@ -293,151 +292,155 @@ msgid "Chassis"
 msgstr ""
 
 #: alien_thunder/gui.py:418
+msgid "Keys"
+msgstr ""
+
+#: alien_thunder/gui.py:419
 msgid "Options"
 msgstr ""
 
-#: alien_thunder/gui.py:423
+#: alien_thunder/gui.py:424
 msgid "No keys selected"
 msgstr ""
 
-#: alien_thunder/gui.py:426
+#: alien_thunder/gui.py:427
 msgid ""
 "Alien Thunder is free and stays free. If it saved you a trip to Windows, a "
 "donation keeps it going."
 msgstr ""
 
-#: alien_thunder/gui.py:430
+#: alien_thunder/gui.py:431
 msgid "Apply live"
 msgstr ""
 
-#: alien_thunder/gui.py:432
+#: alien_thunder/gui.py:433
 msgid "Sends changes to the LEDs as you edit"
 msgstr ""
 
-#: alien_thunder/gui.py:437
+#: alien_thunder/gui.py:438
 msgid "Apply"
 msgstr ""
 
-#: alien_thunder/gui.py:465
+#: alien_thunder/gui.py:466
 msgid "Color for the selection"
 msgstr ""
 
-#: alien_thunder/gui.py:468
+#: alien_thunder/gui.py:469
 msgid "Color of the selected keys"
 msgstr ""
 
-#: alien_thunder/gui.py:471
+#: alien_thunder/gui.py:472
 msgid "Apply to selection"
 msgstr ""
 
-#: alien_thunder/gui.py:476
+#: alien_thunder/gui.py:477
 msgid "Eyedropper"
 msgstr ""
 
-#: alien_thunder/gui.py:477
+#: alien_thunder/gui.py:478
 msgid "Click a key to copy its color"
 msgstr ""
 
-#: alien_thunder/gui.py:480
+#: alien_thunder/gui.py:481
 msgid "Turn selection off"
 msgstr ""
 
-#: alien_thunder/gui.py:481
+#: alien_thunder/gui.py:482
 msgid "Sets the selected keys to black (LED off)"
 msgstr ""
 
-#: alien_thunder/gui.py:486
+#: alien_thunder/gui.py:487
 msgid "Palette:"
 msgstr ""
 
-#: alien_thunder/gui.py:494
+#: alien_thunder/gui.py:495
 msgid "Recent colors:"
 msgstr ""
 
-#: alien_thunder/gui.py:501
+#: alien_thunder/gui.py:502
 msgid "Overall brightness (keyboard and chassis)"
 msgstr ""
 
-#: alien_thunder/gui.py:512
+#: alien_thunder/gui.py:513
 msgid "Key sets"
 msgstr ""
 
-#: alien_thunder/gui.py:518
+#: alien_thunder/gui.py:519
 msgid "Click: select • Ctrl+click: add to the selection"
 msgstr ""
 
-#: alien_thunder/gui.py:523
+#: alien_thunder/gui.py:524
 msgid "Invert selection"
 msgstr ""
 
-#: alien_thunder/gui.py:526
+#: alien_thunder/gui.py:527
 msgid "Clear selection"
 msgstr ""
 
-#: alien_thunder/gui.py:530
+#: alien_thunder/gui.py:531
 msgid "My groups:"
 msgstr ""
 
-#: alien_thunder/gui.py:534
+#: alien_thunder/gui.py:535
 msgid "Select"
 msgstr ""
 
-#: alien_thunder/gui.py:539
+#: alien_thunder/gui.py:540
 msgid "Save selection as a group…"
 msgstr ""
 
-#: alien_thunder/gui.py:542
+#: alien_thunder/gui.py:543
 msgid "Delete group"
 msgstr ""
 
-#: alien_thunder/gui.py:554
+#: alien_thunder/gui.py:555
 #, python-format
 msgid ""
 "Effects only change how bright each light is; the colors stay the ones you "
 "picked. The background service draws them at %d fps."
 msgstr ""
 
-#: alien_thunder/gui.py:560
+#: alien_thunder/gui.py:561
 msgid "Keyboard"
 msgstr ""
 
-#: alien_thunder/gui.py:561 alien_thunder/gui.py:585
+#: alien_thunder/gui.py:562 alien_thunder/gui.py:586
 msgid "Touchpad"
 msgstr ""
 
-#: alien_thunder/gui.py:562 alien_thunder/gui.py:585
+#: alien_thunder/gui.py:563 alien_thunder/gui.py:586
 msgid "Alien head (logo on the lid)"
 msgstr ""
 
-#: alien_thunder/gui.py:570
+#: alien_thunder/gui.py:571
 msgid "Effect:"
 msgstr ""
 
-#: alien_thunder/gui.py:571
+#: alien_thunder/gui.py:572
 msgid "Speed:"
 msgstr ""
 
-#: alien_thunder/gui.py:591
+#: alien_thunder/gui.py:592
 msgid "Power button"
 msgstr ""
 
-#: alien_thunder/gui.py:593
+#: alien_thunder/gui.py:594
 msgid "Power button when plugged in"
 msgstr ""
 
-#: alien_thunder/gui.py:594
+#: alien_thunder/gui.py:595
 msgid "Power button on battery"
 msgstr ""
 
-#: alien_thunder/gui.py:597
+#: alien_thunder/gui.py:598
 msgid "Plugged in (AC):"
 msgstr ""
 
-#: alien_thunder/gui.py:598
+#: alien_thunder/gui.py:599
 msgid "On battery:"
 msgstr ""
 
-#: alien_thunder/gui.py:599
+#: alien_thunder/gui.py:600
 msgid ""
 "The controller stores how the button behaves, asleep and charging included. "
 "To avoid writing it over and over, the colors only go out when they change "
@@ -445,43 +448,105 @@ msgid ""
 "below."
 msgstr ""
 
-#: alien_thunder/gui.py:605
+#: alien_thunder/gui.py:606
 msgid "Write the button colors now"
 msgstr ""
 
-#: alien_thunder/gui.py:615
-msgid "Background service"
+#: alien_thunder/gui.py:616
+msgid "Music keys"
 msgstr ""
 
-#: alien_thunder/gui.py:623
-msgid "Restart service"
+#: alien_thunder/gui.py:618
+msgid ""
+"Keys that control whatever is playing music (Spotify, the browser, any "
+"player Plasma's media controls see). They belong to the profile, like the "
+"colors."
+msgstr ""
+
+#: alien_thunder/gui.py:625
+msgid "Record a key…"
 msgstr ""
 
 #: alien_thunder/gui.py:626
-msgid "Reapply active profile"
-msgstr ""
-
-#: alien_thunder/gui.py:635
-msgid "Software effects:"
+msgid "Press it, then the key you want, for example Fn+F3"
 msgstr ""
 
 #: alien_thunder/gui.py:637
+msgid "No key in 10 seconds; try again."
+msgstr ""
+
+#: alien_thunder/gui.py:644
+msgid "(no keys yet)"
+msgstr ""
+
+#: alien_thunder/gui.py:651
+msgid "Nothing (remove)"
+msgstr ""
+
+#: alien_thunder/gui.py:672
+#, python-format
+msgid ""
+"Can't read the keyboard (%s). Your user needs to be in the input group, the "
+"same as for Fn+F1."
+msgstr ""
+
+#: alien_thunder/gui.py:679
+msgid "Press the key now…"
+msgstr ""
+
+#: alien_thunder/gui.py:701
+msgid "The keyboard went away; try again."
+msgstr ""
+
+#: alien_thunder/gui.py:705
+msgid ""
+"That key already does something on Linux, and pressing it would do both. "
+"Pick one that does nothing, like Fn+F3 to Fn+F6."
+msgstr ""
+
+#: alien_thunder/gui.py:710
+#, python-format
+msgid "%s is already on the list."
+msgstr ""
+
+#: alien_thunder/gui.py:717
+#, python-format
+msgid "%s added; pick what it does above."
+msgstr ""
+
+#: alien_thunder/gui.py:723
+msgid "Background service"
+msgstr ""
+
+#: alien_thunder/gui.py:731
+msgid "Restart service"
+msgstr ""
+
+#: alien_thunder/gui.py:734
+msgid "Reapply active profile"
+msgstr ""
+
+#: alien_thunder/gui.py:743
+msgid "Software effects:"
+msgstr ""
+
+#: alien_thunder/gui.py:745
 msgid "hidraw directly (touchpad, logo and effects)"
 msgstr ""
 
-#: alien_thunder/gui.py:638
+#: alien_thunder/gui.py:746
 msgid "alienrgb (compatible, fixed colors only)"
 msgstr ""
 
-#: alien_thunder/gui.py:641
+#: alien_thunder/gui.py:749
 msgid "Chassis through:"
 msgstr ""
 
-#: alien_thunder/gui.py:643
+#: alien_thunder/gui.py:751
 msgid "Devices"
 msgstr ""
 
-#: alien_thunder/gui.py:648
+#: alien_thunder/gui.py:756
 msgid ""
 "Tips: click selects; Ctrl+click toggles; Shift+click adds; drag to select an "
 "area; double click opens the color picker; Ctrl+A selects everything; Ctrl+I "
@@ -489,234 +554,232 @@ msgid ""
 "CLI: alien-thunder list | set <profile> | apply [profile] | status"
 msgstr ""
 
-#: alien_thunder/gui.py:717
+#: alien_thunder/gui.py:826
 msgid ""
 "You're editing a profile that isn't the active one: the LEDs show it only "
 "while this window is open. Use “Make active” to keep it."
 msgstr ""
 
-#: alien_thunder/gui.py:722
+#: alien_thunder/gui.py:831
 msgid "Profile name:"
 msgstr ""
 
-#: alien_thunder/gui.py:727
+#: alien_thunder/gui.py:836
 msgid "New profile"
 msgstr ""
 
-#: alien_thunder/gui.py:736
+#: alien_thunder/gui.py:845
 msgid "Rename profile"
 msgstr ""
 
-#: alien_thunder/gui.py:746
+#: alien_thunder/gui.py:855
 msgid "Duplicate profile"
 msgstr ""
 
-#: alien_thunder/gui.py:746 alien_thunder/profiles.py:242
+#: alien_thunder/gui.py:855 alien_thunder/profiles.py:253
 #, python-format
 msgid "%s (copy)"
 msgstr ""
 
-#: alien_thunder/gui.py:756
+#: alien_thunder/gui.py:865
 msgid "This is the active profile. Make another one active before deleting it."
 msgstr ""
 
-#: alien_thunder/gui.py:758
+#: alien_thunder/gui.py:867
 #, python-format
 msgid "Delete the profile “%s”?"
 msgstr ""
 
-#: alien_thunder/gui.py:775
+#: alien_thunder/gui.py:884
 #, python-format
 msgid "“%s” is now the active profile"
 msgstr ""
 
-#. noqa: BLE001
-#: alien_thunder/gui.py:783
+#: alien_thunder/gui.py:892
 #, python-format
 msgid ""
 "Couldn't read the AWCC presets:\n"
 "%s"
 msgstr ""
 
-#: alien_thunder/gui.py:788
+#: alien_thunder/gui.py:897
 msgid "Import from Windows (Alienware Command Center)"
 msgstr ""
 
-#: alien_thunder/gui.py:790
+#: alien_thunder/gui.py:899
 msgid ""
 "Check the presets to import as new profiles (the Windows partition is only "
 "read):"
 msgstr ""
 
-#: alien_thunder/gui.py:802
+#: alien_thunder/gui.py:911
 msgid "Import"
 msgstr ""
 
-#: alien_thunder/gui.py:818
+#: alien_thunder/gui.py:927
 #, python-format
 msgid "%d profile imported"
 msgid_plural "%d profiles imported"
 msgstr[0] ""
 msgstr[1] ""
 
-#: alien_thunder/gui.py:830
+#: alien_thunder/gui.py:939
 msgid "No keys selected: click, Ctrl/Shift+click or drag to select"
 msgstr ""
 
-#: alien_thunder/gui.py:833
+#: alien_thunder/gui.py:942
 #, python-format
 msgid "Selected: %s (LED %s)"
 msgstr ""
 
-#: alien_thunder/gui.py:835
+#: alien_thunder/gui.py:944
 #, python-format
 msgid "%d key selected"
 msgid_plural "%d keys selected"
 msgstr[0] ""
 msgstr[1] ""
 
-#: alien_thunder/gui.py:868
+#: alien_thunder/gui.py:977
 msgid "Key color"
 msgstr ""
 
-#: alien_thunder/gui.py:876
+#: alien_thunder/gui.py:985
 msgid "Eyedropper: click a key"
 msgstr ""
 
-#: alien_thunder/gui.py:882
+#: alien_thunder/gui.py:991
 #, python-format
 msgid "Color %s copied from %s"
 msgstr ""
 
-#: alien_thunder/gui.py:897
+#: alien_thunder/gui.py:1006
 msgid "(none yet)"
 msgstr ""
 
-#: alien_thunder/gui.py:927
+#: alien_thunder/gui.py:1036
 msgid "Save group"
 msgstr ""
 
-#: alien_thunder/gui.py:927
+#: alien_thunder/gui.py:1036
 msgid "Group name:"
 msgstr ""
 
-#: alien_thunder/gui.py:1000
+#: alien_thunder/gui.py:1109
 msgid ""
 "The power button colors are written on Apply (active profile) or with “Write "
 "the button colors now”"
 msgstr ""
 
-#: alien_thunder/gui.py:1013
+#: alien_thunder/gui.py:1122
 msgid "Power button written"
 msgstr ""
 
-#: alien_thunder/gui.py:1013
+#: alien_thunder/gui.py:1122
 msgid "Couldn't write the power button"
 msgstr ""
 
-#: alien_thunder/gui.py:1025
+#: alien_thunder/gui.py:1134
 #, python-format
 msgid "systemctl %s failed"
 msgstr ""
 
-#: alien_thunder/gui.py:1037
+#: alien_thunder/gui.py:1146
 msgid "Active profile applied again"
 msgstr ""
 
-#: alien_thunder/gui.py:1063
+#: alien_thunder/gui.py:1172
 msgid "● service running"
 msgstr ""
 
-#: alien_thunder/gui.py:1063
+#: alien_thunder/gui.py:1172
 msgid "● service: retrying"
 msgstr ""
 
-#: alien_thunder/gui.py:1065
+#: alien_thunder/gui.py:1174
 msgid "The service keeps the active profile on the LEDs"
 msgstr ""
 
-#: alien_thunder/gui.py:1066
+#: alien_thunder/gui.py:1175
 #, python-format
 msgid "Running (pid %s). Applying: %s"
 msgstr ""
 
-#: alien_thunder/gui.py:1068
+#: alien_thunder/gui.py:1177
 #, python-format
 msgid "Software effect: %s"
 msgstr ""
 
-#: alien_thunder/gui.py:1069
+#: alien_thunder/gui.py:1178
 #, python-format
 msgid "Last error: %s"
 msgstr ""
 
-#: alien_thunder/gui.py:1071
+#: alien_thunder/gui.py:1180
 msgid "● service stopped"
 msgstr ""
 
-#: alien_thunder/gui.py:1073
+#: alien_thunder/gui.py:1182
 msgid ""
 "Without the service the editor applies directly; software effects don't run"
 msgstr ""
 
-#: alien_thunder/gui.py:1074
+#: alien_thunder/gui.py:1183
 msgid "Stopped. Start it with: systemctl --user enable --now alien-thunder"
 msgstr ""
 
-#: alien_thunder/gui.py:1077
+#: alien_thunder/gui.py:1186
 #, python-format
 msgid "Keyboard 0d62:d2b1: %s"
 msgstr ""
 
-#: alien_thunder/gui.py:1078
+#: alien_thunder/gui.py:1187
 #, python-format
 msgid "AW-ELC 187c:0551: %s"
 msgstr ""
 
-#: alien_thunder/gui.py:1079
+#: alien_thunder/gui.py:1188
 msgid "available"
 msgstr ""
 
-#: alien_thunder/gui.py:1079
+#: alien_thunder/gui.py:1188
 msgid "missing"
 msgstr ""
 
-#: alien_thunder/gui.py:1085
+#: alien_thunder/gui.py:1194
 msgid "modified…"
 msgstr ""
 
-#: alien_thunder/gui.py:1099
+#: alien_thunder/gui.py:1208
 msgid "saved"
 msgstr ""
 
-#: alien_thunder/gui.py:1101
+#: alien_thunder/gui.py:1210
 msgid "save failed"
 msgstr ""
 
-#. noqa: BLE001
-#: alien_thunder/gui.py:1111
+#: alien_thunder/gui.py:1220
 #, python-format
 msgid "Service: %s"
 msgstr ""
 
-#: alien_thunder/gui.py:1125
+#: alien_thunder/gui.py:1234
 #, python-format
 msgid "Error: %s"
 msgstr ""
 
-#: alien_thunder/gui.py:1138
+#: alien_thunder/gui.py:1247
 msgid "Couldn't apply (see the Options tab)"
 msgstr ""
 
-#: alien_thunder/gui.py:1148
+#: alien_thunder/gui.py:1257
 msgid "Applied"
 msgstr ""
 
-#: alien_thunder/gui.py:1148
+#: alien_thunder/gui.py:1257
 msgid "Couldn't apply (the service will try again)"
 msgstr ""
 
-#: alien_thunder/gui.py:1150
+#: alien_thunder/gui.py:1259
 msgid "; not the active profile, so the active one comes back when you close"
 msgstr ""
 
@@ -825,6 +888,22 @@ msgstr ""
 msgid "Extra LEDs (JP/UK)"
 msgstr ""
 
+#: alien_thunder/mediakeys.py:21
+msgid "Previous track"
+msgstr ""
+
+#: alien_thunder/mediakeys.py:22
+msgid "Stop"
+msgstr ""
+
+#: alien_thunder/mediakeys.py:23
+msgid "Play/pause"
+msgstr ""
+
+#: alien_thunder/mediakeys.py:24
+msgid "Next track"
+msgstr ""
+
 #: alien_thunder/overlay.py:54
 msgid "CPU"
 msgstr ""
@@ -864,73 +943,78 @@ msgstr ""
 msgid "items: %s"
 msgstr ""
 
-#: alien_thunder/profiles.py:108
+#: alien_thunder/profiles.py:109
 #, python-format
 msgid "invalid color: %r"
 msgstr ""
 
-#: alien_thunder/profiles.py:156
+#: alien_thunder/profiles.py:157
 msgid "a profile must be a JSON object"
 msgstr ""
 
-#: alien_thunder/profiles.py:165
+#: alien_thunder/profiles.py:166
 #, python-format
 msgid "invalid LED id: %s"
 msgstr ""
 
-#: alien_thunder/profiles.py:181
+#: alien_thunder/profiles.py:187
+#, python-format
+msgid "invalid key: %r"
+msgstr ""
+
+#: alien_thunder/profiles.py:192
 msgid "Untitled"
 msgstr ""
 
-#: alien_thunder/profiles.py:188
+#: alien_thunder/profiles.py:199
 #, python-format
 msgid "invalid profile file name: %r"
 msgstr ""
 
-#: alien_thunder/profiles.py:204
+#: alien_thunder/profiles.py:215
 msgid "(unreadable)"
 msgstr ""
 
-#: alien_thunder/profiles.py:214 alien_thunder/profiles.py:278
+#: alien_thunder/profiles.py:225 alien_thunder/profiles.py:289
 #, python-format
 msgid "profile not found: %s"
 msgstr ""
 
-#: alien_thunder/profiles.py:216
+#: alien_thunder/profiles.py:227
 #, python-format
 msgid "profile %s is not valid: %s"
 msgstr ""
 
-#: alien_thunder/profiles.py:265
+#: alien_thunder/profiles.py:276
 msgid "the active profile can't be deleted; make another one active first"
 msgstr ""
 
-#: alien_thunder/profiles.py:339
+#: alien_thunder/profiles.py:350
 #, python-format
 msgid "settings upgraded to format %d"
 msgstr ""
 
-#: alien_thunder/profiles.py:347
+#: alien_thunder/profiles.py:358
 #, python-format
 msgid "profile %s upgraded to format %d"
 msgstr ""
 
-#: alien_thunder/profiles.py:360
+#: alien_thunder/profiles.py:371
 #, python-format
 msgid "%s moved to %s"
 msgstr ""
 
-#: alien_thunder/profiles.py:372
+#: alien_thunder/profiles.py:383
 #, python-format
 msgid "profile imported from %s: %s (%s)"
 msgstr ""
 
-#: alien_thunder/profiles.py:374
+#: alien_thunder/profiles.py:385
 #, python-format
 msgid "couldn't import the legacy profile: %s"
 msgstr ""
 
-#: alien_thunder/profiles.py:377
+#: alien_thunder/profiles.py:388
 msgid "Default"
 msgstr ""
 
@@ -1001,4 +1085,9 @@ msgstr ""
 #: alien_thunder/winimport.py:163
 #, python-format
 msgid " (Windows user: %s)"
+msgstr ""
+msgid "Download"
+msgstr ""
+
+msgid "Upload"
 msgstr ""

@@ -13,6 +13,11 @@ Window {
     property int ox: 0  // the top-left corner of the screen the bar is on
     property int oy: 0
     property int frame: 0
+    readonly property var targetScreen: backend.screens.find(s => s.name === backend.config.screen) || backend.screens[0]
+    readonly property real maximumScale: Math.min(2.5, targetScreen.width / content.implicitWidth,
+                                                 targetScreen.height / content.implicitHeight)
+    readonly property real minimumScale: Math.min(0.5, maximumScale)
+    readonly property real uiScale: Math.min(backend.config.scale, maximumScale)
 
     // Set once. A layer surface that changes size can be left without a screen for a
     // moment, and Qt crashes on it; showing other readings restarts the overlay instead.
@@ -49,17 +54,20 @@ Window {
     }
 
     Component.onCompleted: {
-        width = content.implicitWidth
-        height = content.implicitHeight
+        width = Math.ceil(content.implicitWidth * uiScale)
+        height = Math.ceil(content.implicitHeight * uiScale)
         place(backend.restore(bar), true)
         visible = true
     }
 
     BarContent {
         id: content
-        anchors.fill: parent
+        width: implicitWidth
+        height: implicitHeight
+        scale: bar.uiScale
+        transformOrigin: Item.TopLeft
         backend: bar.backend
-        opacity: bar.overlay.dragging ? 0.55 : 1.0
+        opacity: bar.overlay.dragging || resizeArea.pressed ? 0.55 : 1.0
         onCloseClicked: bar.backend.close()
     }
 
@@ -69,8 +77,8 @@ Window {
         radius: 10
         color: "transparent"
         border.width: 2
-        border.color: "#00e5ff"
-        visible: bar.overlay.dragging
+        border.color: "#ff6a00"
+        visible: bar.overlay.dragging || resizeArea.pressed
     }
 
     // Changes with every move so the new margins go out with a fresh frame.
@@ -83,7 +91,7 @@ Window {
     MouseArea {
         id: drag
         anchors.fill: parent
-        anchors.rightMargin: 30  // the ✕ has its own mouse area
+        anchors.rightMargin: 30 * bar.uiScale  // the ✕ has its own mouse area
         cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
         property point start
 
@@ -109,6 +117,51 @@ Window {
             }
             bar.overlay.dragging = false
             bar.place(r, false)
+        }
+        onCanceled: bar.overlay.dragging = false
+    }
+
+    Text {
+        anchors.centerIn: parent
+        visible: resizeArea.pressed
+        text: Math.round(resizeArea.nextScale * 100) + "%"
+        color: "#ff6a00"
+        font.pixelSize: 20
+        font.bold: true
+        style: Text.Outline
+        styleColor: "#0b0d10"
+    }
+
+    // Keep the surface fixed during the gesture; recreate it at the saved size on release.
+    MouseArea {
+        id: resizeArea
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        width: Math.max(16, 18 * bar.uiScale)
+        height: Math.max(14, 16 * bar.uiScale)
+        cursorShape: Qt.SizeFDiagCursor
+        hoverEnabled: true
+        property point start
+        property real nextScale: bar.uiScale
+        onPressed: (m) => {
+            start = Qt.point(m.x, m.y)
+            nextScale = bar.uiScale
+        }
+        onPositionChanged: (m) => {
+            if (!pressed) return
+            const dx = (m.x - start.x) / content.implicitWidth
+            const dy = (m.y - start.y) / content.implicitHeight
+            const delta = Math.abs(dx) > Math.abs(dy) ? dx : dy
+            nextScale = Math.max(bar.minimumScale, Math.min(bar.maximumScale, bar.uiScale + delta))
+        }
+        onReleased: bar.backend.resize(nextScale)
+        Accessible.role: Accessible.Grip
+        Accessible.name: qsTr("Resize overlay")
+        Text {
+            anchors.centerIn: parent
+            text: "◢"
+            font.pixelSize: 12
+            color: resizeArea.containsMouse ? "#ff6a00" : "#5c6b77"
         }
     }
 }

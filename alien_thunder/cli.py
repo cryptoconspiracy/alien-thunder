@@ -21,6 +21,10 @@ alien-thunder gmode [on|off|toggle]
                                  G-Mode, the same as Fn+F1; with no argument, show it
 alien-thunder overlay [on|off|show ITEM|hide ITEM|status]
                                  the floating readout bar
+alien-thunder network [on|off|status]
+                                 the optional desktop network widget
+alien-thunder desktop [on|off|status]
+                                 sensor gauges on the desktop
 alien-thunder import-windows [--list | --id N ...]
                                  import AWCC presets from /mnt/windows
 alien-thunder setup              per-user setup after installing a package
@@ -83,7 +87,7 @@ def cmd_status(_a) -> int:
     if engine.daemon_running():
         st = json.loads(str(engine.daemon_call("Status")))
         print(_("service: running (pid %s)") % st["pid"])
-        for k in ("applying", "override", "software_effect", "gmode", "gmode_key", "last_error"):
+        for k in ("applying", "override", "software_effect", "gmode", "gmode_key", "media_keys", "last_error"):
             print(f"  {k}: {st.get(k)}")
     else:
         print(_("service: stopped"))
@@ -202,6 +206,12 @@ def main(argv=None) -> int:
     if argv[0] == "overlay":
         from . import overlay
         return overlay.command(argv[1:])
+    if argv[0] == "network":
+        from . import network
+        return network.command(argv[1:])
+    if argv[0] == "desktop":
+        from . import network
+        return network.command(argv[1:], widget="alien-thunder")
     p = argparse.ArgumentParser(prog="alien-thunder", usage=usage())
     sub = p.add_subparsers(dest="cmd", required=True)
     sub.add_parser("list")

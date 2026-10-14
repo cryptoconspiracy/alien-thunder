@@ -12,14 +12,28 @@ LANGS = $(patsubst po/%/,%,$(wildcard po/*/))
 all: locales
 
 locales:
+	cp plasma/alien-thunder-network/contents/ui/NetworkData.qml alien_thunder/
+	cp alien_thunder/BarContent.qml alien_thunder/NetworkData.qml $(WIDGET)/contents/ui/
+	cp $(WIDGET)/contents/ui/configSupport.qml plasma/alien-thunder-network/contents/ui/
+	mkdir -p plasma/alien-thunder-network/contents/images
+	cp $(WIDGET)/contents/images/donate-*.png plasma/alien-thunder-network/contents/images/
+	for widget in alien-thunder alien-thunder-network; do \
+	  cp alien_thunder/AnalogDial.qml alien_thunder/AlertLed.qml plasma/$$widget/contents/ui/; \
+	done
 	for lang in $(LANGS); do \
 	  mkdir -p alien_thunder/locale/$$lang/LC_MESSAGES $(WIDGET)/contents/locale/$$lang/LC_MESSAGES; \
 	  msgfmt -o alien_thunder/locale/$$lang/LC_MESSAGES/alien-thunder.mo po/$$lang/alien-thunder.po; \
 	  msgfmt -o $(WIDGET)/contents/locale/$$lang/LC_MESSAGES/plasma_applet_alien-thunder.mo po/$$lang/plasma_applet_alien-thunder.po; \
+	  mkdir -p plasma/alien-thunder-network/contents/locale/$$lang/LC_MESSAGES; \
+	  msgfmt -o plasma/alien-thunder-network/contents/locale/$$lang/LC_MESSAGES/plasma_applet_alien-thunder-network.mo po/$$lang/plasma_applet_alien-thunder-network.po; \
 	done
 
 check:
 	/usr/bin/python3 -m unittest discover -s tests -q
+
+# Optional UI checks on a machine with Qt Quick Test and KDE's network collector.
+check-qml: locales
+	QT_QPA_PLATFORM=offscreen QT_QUICK_BACKEND=software /usr/lib/qt6/bin/qmltestrunner -input tests/qml
 
 install: locales
 	install -d $(LIBDIR)
@@ -38,6 +52,7 @@ install: locales
 	done
 	install -d $(SHARE)/plasma/plasmoids
 	cp -r $(WIDGET) $(SHARE)/plasma/plasmoids/
+	cp -r plasma/alien-thunder-network $(SHARE)/plasma/plasmoids/
 	install -Dm644 data/alien-thunder.1 $(SHARE)/man/man1/alien-thunder.1
 	install -Dm644 LICENSE $(SHARE)/licenses/alien-thunder/LICENSE
 
@@ -46,4 +61,4 @@ release:
 	@test -n "$(VERSION)" || { echo "usage: make release VERSION=1.2.3 [DRY_RUN=1]"; exit 1; }
 	DRY_RUN=$(DRY_RUN) packaging/release.sh $(VERSION)
 
-.PHONY: all locales check install release
+.PHONY: all locales check check-qml install release

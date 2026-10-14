@@ -1,0 +1,109 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: alien-thunder-network 1.2.2\n"
+"Language: pt_BR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Alien Thunder · Network"
+msgstr "Alien Thunder · Rede"
+
+msgid "Download: %1 · Upload: %2"
+msgstr "Download: %1 · Upload: %2"
+
+msgid "Network activity"
+msgstr "Atividade de rede"
+
+msgid "Live"
+msgstr "Ao vivo"
+
+msgid "↓ Download"
+msgstr "↓ Download"
+
+msgid "↑ Upload"
+msgstr "↑ Upload"
+
+msgid "Applications"
+msgstr "Aplicativos"
+
+msgid "Application"
+msgstr "Aplicativo"
+
+msgid "Download"
+msgstr "Download"
+
+msgid "Upload"
+msgstr "Upload"
+
+msgid "Sort by download"
+msgstr "Ordenar por download"
+
+msgid "Sort by upload"
+msgstr "Ordenar por upload"
+
+msgid "Network monitoring is unavailable. Check the KDE System Monitor installation."
+msgstr "Monitoramento indisponível. Verifique a instalação do Monitor do Sistema do KDE."
+
+msgid "Measuring network activity…"
+msgstr "Medindo a atividade de rede…"
+
+msgid "No applications transferring data"
+msgstr "Nenhum aplicativo transferindo dados"
+
+msgid "Application traffic · 2 s"
+msgstr "Tráfego dos aplicativos · 2 s"
+
+msgid "Show idle"
+msgstr "Mostrar inativos"
+
+msgid "General"
+msgstr "Geral"
+
+msgid "Gauge style:"
+msgstr "Estilo dos mostradores:"
+
+msgid "Follow Alien Thunder"
+msgstr "Seguir o Alien Thunder"
+
+msgid "Digital"
+msgstr "Digital"
+
+msgid "Analog · Audi style"
+msgstr "Analógico · estilo Audi"
+
+msgid "Sort applications by:"
+msgstr "Ordenar aplicativos por:"
+
+msgid "Show idle applications"
+msgstr "Mostrar aplicativos inativos"
+
+msgid "Show graph behind the application list"
+msgstr "Mostrar gráfico no fundo da lista de aplicativos"
+
+msgid "Blink red LED near the observed peak"
+msgstr "Piscar LED vermelho perto do pico observado"
+
+msgid "The alert starts at 90% of each direction's peak over the last 90 seconds, not the connection's capacity."
+msgstr "O alerta começa em 90% do pico de cada direção nos últimos 90 segundos, não da capacidade da conexão."
+
+msgid "Support"
+msgstr "Apoie"
+
+msgid "EVM networks"
+msgstr "Redes EVM"
+
+msgid "Copy"
+msgstr "Copiar"
+
+msgid "Copied"
+msgstr "Copiado"
+
+msgid "Alien Thunder is free and stays free. If it saved you from booting into Windows just to change your keyboard colors, a donation keeps it going."
+msgstr "O Alien Thunder é gratuito e vai continuar assim. Se ele te poupou de abrir o Windows só para trocar as cores do teclado, uma doação ajuda a mantê-lo."
+
+msgid "10 s average · Auto: 0 – %1"
+msgstr "Média de 10 s · Auto: 0 – %1"
+msgid "Show in the overlay:"
+msgstr "Mostrar na sobreposição:"

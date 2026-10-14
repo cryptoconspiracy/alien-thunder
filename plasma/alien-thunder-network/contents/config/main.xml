@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0">
+    <kcfgfile name=""/>
+    <group name="General">
+        <entry name="gaugeStyle" type="String"><default>inherit</default></entry>
+        <entry name="showGraph" type="Bool"><default>true</default></entry>
+        <entry name="showAlerts" type="Bool"><default>true</default></entry>
+        <entry name="sortBy" type="String"><default>upload</default></entry>
+        <entry name="showIdle" type="Bool"><default>false</default></entry>
+    </group>
+</kcfg>

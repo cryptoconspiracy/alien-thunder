@@ -171,3 +171,56 @@ msgstr ""
 #: plasma/alien-thunder/contents/config/config.qml:11
 msgid "Support"
 msgstr ""
+
+msgid "Network widget"
+msgstr ""
+
+msgid "Upload and download by application on your desktop."
+msgstr ""
+
+msgid "Desktop gauge style:"
+msgstr ""
+
+msgid "Panel gauge style:"
+msgstr ""
+
+msgid "Overlay and network gauges:"
+msgstr ""
+
+msgid "Gauge style:"
+msgstr ""
+
+msgid "Digital"
+msgstr ""
+
+msgid "Show on the desktop:"
+msgstr ""
+
+msgid "Choose desktop readings in the widget settings."
+msgstr ""
+
+msgid "Overlay size:"
+msgstr ""
+
+msgid "Overlay size"
+msgstr ""
+
+msgid "Reset overlay size"
+msgstr ""
+
+msgid "Applied on release; limited to the screen size."
+msgstr ""
+
+msgid "Could not change or read the overlay size."
+msgstr ""
+
+msgid "Analog · Audi style"
+msgstr ""
+msgid "Desktop gauges"
+msgstr ""
+
+msgid "Download"
+msgstr ""
+
+msgid "Upload"
+msgstr ""

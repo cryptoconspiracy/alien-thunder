@@ -22,12 +22,15 @@ Requires:       %{primary_python}-gobject
 Requires:       typelib-1_0-GUdev-1_0
 Requires:       layer-shell-qt6
 Requires:       hicolor-icon-theme
+Recommends:     libksysguard6-imports
+Recommends:     libksysguard6-plugins
 %else
 Requires:       python3-dbus
 Requires:       python3-pyside6
 Requires:       python3-gobject
 Requires:       libgudev
 Requires:       layer-shell-qt
+Recommends:     libksysguard
 %endif
 Recommends:     power-profiles-daemon
 Recommends:     plasma-workspace
@@ -73,6 +76,7 @@ rm -f %{buildroot}%{_datadir}/licenses/%{name}/LICENSE
 %dir %{_datadir}/plasma
 %dir %{_datadir}/plasma/plasmoids
 %{_datadir}/plasma/plasmoids/alien-thunder/
+%{_datadir}/plasma/plasmoids/alien-thunder-network/
 
 %changelog
 * Fri Oct 02 2026 Dan B <unknown@cryptoconspiracy.io> - 1.2.2-1

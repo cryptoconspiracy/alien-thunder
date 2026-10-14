@@ -25,7 +25,7 @@ Depends: ${misc:Depends},
  qml6-module-qtquick-window,
  qml6-module-qtqml,
  qml6-module-org-kde-layershell
-Recommends: power-profiles-daemon, plasma-workspace
+Recommends: power-profiles-daemon, plasma-workspace, qml6-module-org-kde-ksysguard, libksysguard-bin
 Description: Alienware lighting, G-Mode and sensor readouts for KDE Plasma
  Alien Thunder brings the Alienware Command Center bits Linux lacks to KDE
  Plasma: per-key keyboard lighting with profiles and effects that keep your

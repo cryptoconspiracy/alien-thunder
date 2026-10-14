@@ -4,6 +4,23 @@
       xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
   <kcfgfile name=""/>
   <group name="General">
+    <entry name="desktop_style" type="String"><default>analog</default></entry>
+    <entry name="panel_style" type="String"><default>digital</default></entry>
+    <entry name="panel_download" type="Bool"><default>false</default></entry>
+    <entry name="panel_upload" type="Bool"><default>false</default></entry>
+    <entry name="desktop_download" type="Bool"><default>false</default></entry>
+    <entry name="desktop_upload" type="Bool"><default>false</default></entry>
+    <entry name="desktop_cpu_temp" type="Bool"><default>true</default></entry>
+    <entry name="desktop_cpu_load" type="Bool"><default>true</default></entry>
+    <entry name="desktop_gpu_temp" type="Bool"><default>true</default></entry>
+    <entry name="desktop_gpu_mem" type="Bool"><default>true</default></entry>
+    <entry name="desktop_cpu_fan" type="Bool"><default>true</default></entry>
+    <entry name="desktop_gpu_fan" type="Bool"><default>true</default></entry>
+    <entry name="desktop_ram" type="Bool"><default>true</default></entry>
+    <entry name="desktop_ram_gb" type="Bool"><default>true</default></entry>
+    <entry name="overlay_style" type="String"><default>digital</default></entry>
+    <entry name="overlay_download" type="Bool"><default>false</default></entry>
+    <entry name="overlay_upload" type="Bool"><default>false</default></entry>
     <entry name="panel_cpu_temp" type="Bool"><default>true</default></entry>
     <entry name="panel_cpu_load" type="Bool"><default>true</default></entry>
     <entry name="panel_gpu_temp" type="Bool"><default>true</default></entry>

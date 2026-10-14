@@ -8,7 +8,7 @@ import re
 import tempfile
 import unicodedata
 
-from . import effects, paths
+from . import effects, mediakeys, paths
 from .i18n import gettext as _
 
 DEFAULT_COLOR = "#ff2900"
@@ -25,6 +25,7 @@ DEFAULT_PROFILE = {
         "logo": {"effect": "static", "color": DEFAULT_COLOR, "speed": 1.0},
         "power": {"ac": DEFAULT_COLOR, "battery": DEFAULT_COLOR},
     },
+    "keys": [],  # [{"scan": HID usage, "action": one of mediakeys.ACTIONS}]
 }
 
 DEFAULT_CONFIG = {
@@ -178,6 +179,16 @@ def normalize(p: dict) -> dict:
         zz["speed"] = max(0.1, min(5.0, float(zz["speed"])))
     pw = out["chassis"]["power"]
     pw["ac"], pw["battery"] = norm_hex(pw["ac"]), norm_hex(pw["battery"])
+    keys, seen = [], set()
+    for k in out["keys"] if isinstance(out["keys"], list) else []:
+        try:
+            scan = int(k["scan"], 16) if isinstance(k["scan"], str) else int(k["scan"])
+        except (KeyError, TypeError, ValueError):
+            raise ProfileError(_("invalid key: %r") % (k,)) from None
+        if k.get("action") in mediakeys.ACTIONS and scan not in seen:
+            seen.add(scan)
+            keys.append({"scan": scan, "action": k["action"]})
+    out["keys"] = keys
     out["name"] = str(out.get("name") or _("Untitled"))
     out["version"] = VERSION
     return out

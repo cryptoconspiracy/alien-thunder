@@ -23,11 +23,38 @@ how fast the fans are spinning.
   their own effect and speed.
 - **G-Mode.** Fn+F1 works again: fans at full speed and the performance power profile,
   and the F1 key turns white while it's on, like on Windows.
+- **Music keys.** The editor's **Keys** tab records Fn+F3 to Fn+F6 and assigns previous,
+  stop, play/pause or next to each key, saved with the profile. Previous restarts a
+  track after its first three seconds; press again right away to go back a track.
+  The service controls MPRIS players, including browsers, and needs the same `input`
+  group access as Fn+F1. In Brave, restarting a track also needs the Plasma Integration
+  browser extension enabled.
 - **Readouts on the panel.** CPU and GPU temperature, CPU load, GPU memory (VRAM) in use,
   both fan speeds and memory in use (in % and in GB), right next to the system tray and
   the clock. You pick which ones in the widget's settings.
 - **Overlay.** The same readouts in a small bar that floats above every window, games
   in fullscreen included. Drag it anywhere, on any screen; its ✕ puts it away.
+- **Optional network widget.** **Alien Thunder · Network** shows upload and download
+  by application on the desktop, updated every two seconds, with a 90-second graph
+  behind the application list and animated download/upload speedometers in fluorescent
+  orange. A blinking red LED marks traffic at or above 90% of that direction's observed
+  peak over those 90 seconds, not the connection's capacity. Each dial displays its automatic scale,
+  based on the peak traffic in the graph.
+  Enable or disable it with **Network widget** in the panel popup, or run
+  `alien-thunder network on` / `alien-thunder network off`. It is also available in
+  Plasma's **Add Widgets** list. Sort by either direction and optionally show idle
+  applications. Plasma remembers its position and settings across logins.
+  Right-click the network widget and choose **Configure Alien Thunder · Network**
+  for its own settings: digital/analog style (or follow Alien Thunder), sorting,
+  idle applications, the background graph and blinking alerts. These preferences
+  apply only to that network widget.
+  Its **Support** tab also includes the Bitcoin and EVM donation wallets, QR codes
+  and copy buttons, shared with the main widget.
+  It uses KDE System Monitor's `org.kde.ksysguard.process` module and
+  `ksgrd_network_helper` (from libksysguard), including TCP and UDP; the helper needs
+  the distribution's normal `CAP_NET_RAW` capability. The totals cover the listed
+  application groups, not every packet on every interface. Processes started from
+  a terminal can appear under that terminal, following KDE's application grouping.
 
 ## How it looks
 
@@ -51,6 +78,44 @@ G-Mode and the overlay are one switch each. **Lighting** opens the lighting edit
 Grab the bar anywhere and drop it where you like, on either screen; it remembers the
 spot. The ✕ at its end turns the overlay off, and the switch on the panel brings it
 back. Untick a reading in the panel popup and the bar gets shorter.
+Drag the small triangle in its bottom-right corner to resize the entire bar, including
+the text. The percentage appears while dragging; release to apply. The size is saved
+across restarts and limited to the current screen. The bar briefly recreates its window
+when applying a size to keep layer-shell stable.
+The panel popup and **General** settings also provide an **Overlay size** slider
+from 50% to 250%, with a reset to 100%.
+
+In **Alien Thunder settings → General → Overlay and network gauges**, choose **Digital**
+or **Analog · Audi style**. This one setting changes every reading in the floating bar
+and both network totals. The analog style uses dark round dials, white graduations and
+red needles with fluorescent orange accents, with the exact reading below. You can also switch styles from the overlay
+section of the panel popup. **General → Panel gauge style** independently chooses
+digital readings or compact analog dials for the taskbar. **Show on the panel**
+selects each sensor plus download and upload; network indicators use the same
+ten-second moving average. Compact dials keep the exact value beside the needle.
+CPU load, VRAM and RAM readings show a blinking red LED above 90% usage.
+
+Turn on **Desktop gauges** in the panel popup (or run `alien-thunder desktop on`)
+to add the gauges to your desktop; turn it off with the same switch or
+`alien-thunder desktop off`. Plasma saves their position and size. You can also
+add **Alien Thunder** through Plasma's **Add Widgets** to use the same digital or
+analog readings on the desktop. **General → Show on the desktop** selects readings
+independently for each widget, without changing the panel or floating bar. Choose
+**Desktop gauge style** for its own analog or digital display. The gauges stay
+side by side in one horizontal bar, just like the overlay; resizing in Plasma's
+edit mode scales the whole strip, without wrapping into a grid. Download and upload
+can be included in this desktop bar too.
+
+Select **Download** and **Upload** under **Show in the overlay** to put network
+gauges in the floating bar, in either digital or analog style. The network widget
+has these switches too; selecting one there also turns the overlay on. From the
+terminal, use `alien-thunder overlay show download` (or `upload`), then
+`alien-thunder overlay on`. Network readings use the same application totals and
+90-second automatic scale as the desktop network widget, independently of whether
+that widget is open. They are off by default and require KDE's network collector.
+All network gauges use a moving average of the last ten seconds (five samples),
+including their numeric readings. Scale and peak alerts follow these smoothed
+values. The application list and its graph keep the original two-second readings.
 
 ### The lighting editor
 

@@ -8,6 +8,8 @@
 - runs the software effects (a GLib timer, up to 20 fps) and stops cleanly on SIGTERM;
 - G-Mode: Fn+F1 toggles the performance power profile, and F1 stays white while it's
   on, whether the switch came from the key or from Plasma's applet (see gmode.py);
+- media keys: Fn+F3 to Fn+F6 send the active profile's action to the music player over
+  MPRIS (see mediakeys.py);
 - writes the sensor readings for the panel widget and the overlay every 2 s;
 - serves io.github.AlienThunder on the session bus for the GUI and the CLI.
 """
@@ -34,7 +36,7 @@ except (ValueError, ImportError):  # no libgudev: only the periodic check is lef
     GUdev = None
 
 from . import engine as engine_mod  # noqa: E402
-from . import gmode, hw, paths, profiles, sensors  # noqa: E402
+from . import gmode, hw, mediakeys, paths, profiles, sensors  # noqa: E402
 
 BACKOFF = (1, 2, 3, 5, 8, 13, 20, 30)
 
@@ -66,6 +68,10 @@ class Daemon(dbus.service.Object):
         self.key_fd = None
         self.key_watch = 0
         self.key_error = ""
+        self.media_fd = None
+        self.media_watch = 0
+        self.media_error = ""
+        self.session = None
         self.sensors = sensors.Sensors()
 
     # ------------------------------------------------------------ helpers
@@ -245,6 +251,8 @@ class Daemon(dbus.service.Object):
         self._check_devs()
         if self.key_fd is None:
             self.open_gmode_key()
+        if self.media_fd is None:
+            self.open_media_keys()
         return True
 
     def _publish_sensors(self):
@@ -316,6 +324,46 @@ class Daemon(dbus.service.Object):
             self.set_gmode(not self.engine.gmode)
         return True
 
+    # ------------------------------------------------------------ media keys
+    def open_media_keys(self):
+        try:
+            self.media_fd = os.open(mediakeys.KEYBOARD, os.O_RDONLY | os.O_NONBLOCK)
+        except OSError as e:
+            if str(e) != self.media_error:
+                self.media_error = str(e)
+                log(f"media keys unavailable: {e}")
+            return
+        self.media_error = ""
+        self.media_watch = GLib.io_add_watch(self.media_fd, GLib.PRIORITY_DEFAULT,
+                                             GLib.IO_IN | GLib.IO_HUP | GLib.IO_ERR, self._on_media_key)
+
+    def _on_media_key(self, fd, cond):
+        data = b""
+        if cond & GLib.IO_IN:
+            try:
+                data = os.read(fd, mediakeys.EVENT.size * 64)
+            except BlockingIOError:
+                return True
+            except OSError:
+                data = b""
+        if not data:  # the keyboard went away; _periodic opens it again
+            os.close(fd)
+            self.media_fd = None
+            self.media_watch = 0
+            return False
+        scans = mediakeys.presses(data)
+        if scans:
+            prof, _active = self.current()
+            for scan, _code in scans:
+                action = mediakeys.action_for(prof, scan)
+                if action:
+                    try:
+                        if not mediakeys.send(action, self.session):
+                            log(f"{mediakeys.key_name(scan)}: no music player open")
+                    except dbus.exceptions.DBusException as e:
+                        log(f"{mediakeys.key_name(scan)}: {e.get_dbus_message()}")
+        return True
+
     def setup(self):
         system = self.system = dbus.SystemBus()
         system.add_signal_receiver(self.on_prepare_for_sleep, signal_name="PrepareForSleep",
@@ -326,6 +374,8 @@ class Daemon(dbus.service.Object):
                                    bus_name=gmode.PP_NAME, path=gmode.PP_PATH)
         self.on_power_profile(gmode.active_profile(system))
         self.open_gmode_key()
+        self.session = dbus.SessionBus()
+        self.open_media_keys()
         if GUdev is not None:
             self.udev = GUdev.Client.new(["hidraw"])
             self.udev.connect("uevent", self.on_uevent)
@@ -347,6 +397,9 @@ class Daemon(dbus.service.Object):
         if self.key_fd is not None:
             GLib.source_remove(self.key_watch)
             os.close(self.key_fd)
+        if self.media_fd is not None:
+            GLib.source_remove(self.media_watch)
+            os.close(self.media_fd)
         self.engine.close()
         self.loop.quit()
         return False
@@ -415,6 +468,7 @@ class Daemon(dbus.service.Object):
             "gmode": self.engine.gmode,
             "power_profile": self.power_profile,
             "gmode_key": self.key_error or "ok",
+            "media_keys": self.media_error or "ok",
             "keyboard": self.devs[0],
             "chassis": self.devs[1],
             "last_error": self.last_error,

@@ -15,12 +15,35 @@ PlasmoidItem {
     property var sensors: ({})
     property var overlay: ({ running: false, items: {} })
     property bool serviceDown: false
+    property bool networkEnabled: false
+    property bool desktopEnabled: false
+    property bool syncingStyle: false
+    readonly property bool onDesktop: Plasmoid.formFactor === PlasmaCore.Types.Planar
+    preferredRepresentation: onDesktop ? fullRepresentation : compactRepresentation
+    fullRepresentation: onDesktop ? desktopRepresentation : panelRepresentation
+    Plasmoid.backgroundHints: onDesktop ? PlasmaCore.Types.NoBackground : PlasmaCore.Types.DefaultBackground
 
     readonly property url icon: Qt.resolvedUrl("../images/alien-thunder.png")
     readonly property var metrics: ["cpu_temp", "cpu_load", "gpu_temp", "gpu_mem", "cpu_fan", "gpu_fan", "ram", "ram_gb"]
+    readonly property var overlayMetrics: metrics.concat(["download", "upload"])
+
+    Loader {
+        id: panelNetwork
+        active: !root.onDesktop && (Plasmoid.configuration.panel_download || Plasmoid.configuration.panel_upload)
+        source: "NetworkData.qml"
+    }
+    function isNetwork(key) { return key === "download" || key === "upload" }
+    function numericValue(key) {
+        if (isNetwork(key))
+            return panelNetwork.item && panelNetwork.item.ready && panelNetwork.item.available
+                ? panelNetwork.item[key + "Average"] : null
+        return serviceDown ? null : sensors[key]
+    }
 
     function label(key) {
         switch (key) {
+        case "download": return i18n("Download")
+        case "upload": return i18n("Upload")
         case "cpu_temp": return i18n("CPU")
         case "cpu_load": return i18n("CPU load")
         case "gpu_temp": return i18n("GPU")
@@ -34,6 +57,7 @@ PlasmoidItem {
     }
 
     function unit(key) {
+        if (isNetwork(key)) return maximum(key) >= 1048576 ? "MiB/s" : "KiB/s"
         if (key.endsWith("_temp")) return "°C"
         if (key.endsWith("_fan")) return i18nc("revolutions per minute", "rpm")
         if (key === "ram_gb") return i18nc("gigabytes of memory", "GB / %1", sensors.ram_total_gb || "?")
@@ -41,13 +65,15 @@ PlasmoidItem {
     }
 
     function value(key) {
-        const v = sensors[key]
-        return v === undefined || v === null ? "--" : String(v)
+        const v = numericValue(key)
+        if (v === undefined || v === null) return "--"
+        return isNetwork(key) ? (v / (maximum(key) >= 1048576 ? 1048576 : 1024)).toFixed(1) : String(v)
     }
 
     function color(key) {
-        const v = sensors[key]
+        const v = numericValue(key)
         if (v === undefined || v === null) return Kirigami.Theme.disabledTextColor
+        if (isNetwork(key)) return "#ff6a00"
         if (key.endsWith("_temp")) {
             if (v >= 90) return Kirigami.Theme.negativeTextColor
             if (v >= 75) return Kirigami.Theme.neutralTextColor
@@ -61,6 +87,23 @@ PlasmoidItem {
 
     function shownOnPanel(key) {
         return Plasmoid.configuration["panel_" + key]
+    }
+
+    function usageAlert(key) {
+        if (key === "ram_gb") key = "ram"
+        return !serviceDown && ["cpu_load", "gpu_mem", "ram"].includes(key) && sensors[key] > 90
+    }
+
+    function maximum(key) {
+        if (isNetwork(key)) {
+            const history = panelNetwork.item ? panelNetwork.item.gaugeHistory : []
+            const peak = Math.max(1024, numericValue(key) || 0, ...history.map(p => p[key]))
+            return Math.pow(2, Math.ceil(Math.log2(peak)))
+        }
+        if (key.endsWith("_temp")) return 120
+        if (key.endsWith("_fan")) return Math.max(8000, Math.ceil((sensors[key] || 0) / 2000) * 2000)
+        if (key === "ram_gb") return sensors.ram_total_gb || 32
+        return 100
     }
 
     function quote(text) {
@@ -93,7 +136,33 @@ PlasmoidItem {
         function refresh() { run("alien-thunder overlay status") }
         onNewData: (source, data) => {
             disconnectSource(source)
-            try { root.overlay = JSON.parse(data.stdout) } catch (e) {}
+            try {
+                root.overlay = JSON.parse(data.stdout)
+                // A desktop instance can change the global style too.
+                root.syncingStyle = true
+                Plasmoid.configuration.overlay_style = root.overlay.style === "analog" ? "analog" : "digital"
+                for (const key of root.overlayMetrics)
+                    Plasmoid.configuration["overlay_" + key] = !!root.overlay.items[key]
+                root.syncingStyle = false
+            } catch (e) { root.syncingStyle = false }
+        }
+    }
+
+    Shell {
+        id: networkSource
+        function refresh() { run("alien-thunder network status") }
+        onNewData: (source, data) => {
+            disconnectSource(source)
+            try { root.networkEnabled = JSON.parse(data.stdout).enabled } catch (e) {}
+        }
+    }
+
+    Shell {
+        id: desktopSource
+        function refresh() { run("alien-thunder desktop status") }
+        onNewData: (source, data) => {
+            disconnectSource(source)
+            try { root.desktopEnabled = JSON.parse(data.stdout).enabled } catch (e) {}
         }
     }
 
@@ -103,6 +172,8 @@ PlasmoidItem {
         onNewData: (source) => {
             disconnectSource(source)
             overlaySource.refresh()
+            networkSource.refresh()
+            desktopSource.refresh()
             sensorSource.run("cat \"$XDG_RUNTIME_DIR/alien-thunder/sensors.json\"")
         }
     }
@@ -112,13 +183,23 @@ PlasmoidItem {
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: sensorSource.run("cat \"$XDG_RUNTIME_DIR/alien-thunder/sensors.json\"")
+        onTriggered: {
+            sensorSource.run("cat \"$XDG_RUNTIME_DIR/alien-thunder/sensors.json\"")
+            if (root.onDesktop) overlaySource.refresh()
+        }
     }
 
-    onExpandedChanged: () => { if (root.expanded) overlaySource.refresh() }
+    onExpandedChanged: () => {
+        if (root.expanded) {
+            overlaySource.refresh()
+            networkSource.refresh()
+            desktopSource.refresh()
+        }
+    }
     Component.onCompleted: {
         overlaySource.refresh()
-        overlaySync.restart()
+        networkSource.refresh()
+        desktopSource.refresh()
     }
 
     // The overlay's readings are chosen here (settings or popup) and handed to the bar in
@@ -126,14 +207,23 @@ PlasmoidItem {
     Timer {
         id: overlaySync
         interval: 400
-        onTriggered: commands.run("alien-thunder overlay items "
-                                  + root.metrics.filter(k => Plasmoid.configuration["overlay_" + k]).join(","))
+        onTriggered: {
+            if (root.onDesktop) {
+                commands.run("alien-thunder overlay style "
+                             + (Plasmoid.configuration.overlay_style === "analog" ? "analog" : "digital"))
+                return
+            }
+            commands.run("alien-thunder overlay items "
+                                  + root.quote(root.overlayMetrics.filter(k => Plasmoid.configuration["overlay_" + k]).join(","))
+                                  + " " + (Plasmoid.configuration.overlay_style === "analog" ? "analog" : "digital"))
+        }
     }
 
     Connections {
         target: Plasmoid.configuration
         function onValueChanged(key) {
-            if (key.startsWith("overlay_"))
+            if (root.syncingStyle) return
+            if (key.startsWith("overlay_") && (!root.onDesktop || key === "overlay_style"))
                 overlaySync.restart()
         }
     }
@@ -148,7 +238,7 @@ PlasmoidItem {
     }
 
     compactRepresentation: MouseArea {
-        id: compact
+        id: panelArea
         hoverEnabled: true
         onClicked: root.expanded = !root.expanded
 
@@ -161,14 +251,14 @@ PlasmoidItem {
             spacing: Kirigami.Units.smallSpacing * 2
 
             Item {
-                Layout.preferredWidth: compact.height
-                Layout.preferredHeight: compact.height
+                Layout.preferredWidth: panelArea.height
+                Layout.preferredHeight: panelArea.height
 
                 Kirigami.Icon {
                     anchors.fill: parent
                     anchors.margins: 2
                     source: root.icon
-                    active: compact.containsMouse
+                    active: panelArea.containsMouse
                 }
 
                 // G-Mode badge, white like the F1 key while it's on.
@@ -192,30 +282,85 @@ PlasmoidItem {
             }
 
             Repeater {
-                model: root.metrics.filter(k => root.shownOnPanel(k))
-                delegate: ColumnLayout {
+                model: root.overlayMetrics.filter(k => root.shownOnPanel(k))
+                delegate: RowLayout {
+                    id: panelGauge
                     required property string modelData
-                    spacing: -2
-                    PlasmaComponents3.Label {
-                        text: root.label(modelData).toUpperCase() + " " + root.unit(modelData)
-                        font.pixelSize: Math.max(8, compact.height * 0.24)
-                        opacity: 0.6
-                        Layout.alignment: Qt.AlignHCenter
+                    spacing: 2
+                    AnalogDial {
+                        visible: Plasmoid.configuration.panel_style === "analog"
+                        compact: true
+                        Layout.preferredWidth: panelArea.height
+                        Layout.preferredHeight: panelArea.height
+                        value: root.numericValue(panelGauge.modelData) || 0
+                        maximum: root.maximum(panelGauge.modelData)
+                        ready: root.numericValue(panelGauge.modelData) !== undefined && root.numericValue(panelGauge.modelData) !== null
                     }
-                    PlasmaComponents3.Label {
-                        text: root.value(modelData)
-                        color: root.color(modelData)
-                        font.family: "monospace"
-                        font.bold: true
-                        font.pixelSize: Math.max(11, compact.height * 0.42)
-                        Layout.alignment: Qt.AlignHCenter
+                    ColumnLayout {
+                        spacing: -2
+                        PlasmaComponents3.Label {
+                            text: root.label(panelGauge.modelData).toUpperCase() + " " + root.unit(panelGauge.modelData)
+                            font.pixelSize: Math.max(8, panelArea.height * 0.24)
+                            opacity: 0.6
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+                        PlasmaComponents3.Label {
+                            text: root.value(panelGauge.modelData)
+                            color: root.color(panelGauge.modelData)
+                            font.family: "monospace"
+                            font.bold: true
+                            font.pixelSize: Math.max(11, panelArea.height * 0.42)
+                            Layout.alignment: Qt.AlignHCenter
+                        }
                     }
                 }
             }
         }
     }
 
-    fullRepresentation: PlasmaExtras.Representation {
+    Component {
+        id: desktopRepresentation
+        Item {
+            Layout.minimumWidth: 180
+            Layout.minimumHeight: 40
+            Layout.preferredWidth: Math.max(180, desktopBar.implicitWidth)
+            Layout.preferredHeight: desktopBar.implicitHeight
+            BarContent {
+                id: desktopBar
+                width: implicitWidth
+                height: implicitHeight
+                showClose: false
+                showHandle: false
+                scale: Math.min(parent.width / width, parent.height / height)
+                transformOrigin: Item.TopLeft
+                x: (parent.width - width * scale) / 2
+                y: (parent.height - height * scale) / 2
+                visible: root.overlayMetrics.some(k => Plasmoid.configuration["desktop_" + k])
+                backend: {
+                    const selected = {}, labels = {}
+                    for (const key of root.overlayMetrics) {
+                        selected[key] = !!Plasmoid.configuration["desktop_" + key]
+                        labels[key] = root.label(key)
+                    }
+                    return {config: {style: Plasmoid.configuration.desktop_style, items: selected},
+                        values: root.serviceDown ? {} : root.sensors,
+                        items: root.overlayMetrics, labels: labels}
+                }
+            }
+            PlasmaComponents3.Label {
+                anchors.fill: parent
+                visible: !desktopBar.visible
+                text: i18n("Choose desktop readings in the widget settings.")
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+    }
+
+    Component {
+      id: panelRepresentation
+      PlasmaExtras.Representation {
         Layout.preferredWidth: Kirigami.Units.gridUnit * 22
         Layout.minimumWidth: Kirigami.Units.gridUnit * 18
         Layout.preferredHeight: content.implicitHeight + header.implicitHeight + Kirigami.Units.largeSpacing * 2
@@ -262,6 +407,7 @@ PlasmoidItem {
             }
 
             GridLayout {
+                visible: !root.onDesktop
                 columns: 3
                 Layout.fillWidth: true
                 columnSpacing: Kirigami.Units.largeSpacing
@@ -291,6 +437,7 @@ PlasmoidItem {
             Kirigami.Separator { Layout.fillWidth: true }
 
             RowLayout {
+                visible: !root.onDesktop
                 Layout.fillWidth: true
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -311,6 +458,7 @@ PlasmoidItem {
             }
 
             RowLayout {
+                visible: !root.onDesktop
                 Layout.fillWidth: true
                 ColumnLayout {
                     Layout.fillWidth: true
@@ -331,16 +479,29 @@ PlasmoidItem {
             }
 
             ColumnLayout {
-                visible: !!root.overlay.running
+                visible: !root.onDesktop
                 Layout.fillWidth: true
                 Layout.leftMargin: Kirigami.Units.largeSpacing
                 spacing: 0
 
+                RowLayout {
+                    PlasmaComponents3.Label { text: i18n("Gauge style:") }
+                    PlasmaComponents3.ComboBox {
+                        model: [i18n("Digital"), i18n("Analog · Audi style")]
+                        currentIndex: Plasmoid.configuration.overlay_style === "analog" ? 1 : 0
+                        onActivated: Plasmoid.configuration.overlay_style = currentIndex === 1 ? "analog" : "digital"
+                    }
+                }
+
+                PlasmaComponents3.Label { text: i18n("Overlay size:") }
+                OverlaySizeControl { Layout.fillWidth: true }
+
                 Flow {
+                    visible: !!root.overlay.running
                     Layout.fillWidth: true
                     spacing: Kirigami.Units.smallSpacing
                     Repeater {
-                        model: root.metrics
+                        model: root.overlayMetrics
                         delegate: PlasmaComponents3.CheckBox {
                             required property string modelData
                             text: root.label(modelData) + " " + root.unit(modelData).split(" ")[0]
@@ -350,6 +511,43 @@ PlasmoidItem {
                     }
                 }
             }
+
+            RowLayout {
+                visible: !root.onDesktop
+                Layout.fillWidth: true
+                PlasmaComponents3.Label {
+                    text: i18n("Desktop gauges")
+                    font.bold: true
+                    Layout.fillWidth: true
+                }
+                PlasmaComponents3.Switch {
+                    checked: root.desktopEnabled
+                    onToggled: commands.run("alien-thunder desktop " + (checked ? "on" : "off"))
+                }
+            }
+
+            RowLayout {
+                visible: !root.onDesktop
+                Layout.fillWidth: true
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+                    PlasmaComponents3.Label { text: i18n("Network widget"); font.bold: true }
+                    PlasmaComponents3.Label {
+                        text: i18n("Upload and download by application on your desktop.")
+                        wrapMode: Text.Wrap
+                        opacity: 0.7
+                        font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        Layout.fillWidth: true
+                    }
+                }
+                PlasmaComponents3.Switch {
+                    checked: root.networkEnabled
+                    onToggled: commands.run("alien-thunder network " + (checked ? "on" : "off"))
+                }
+            }
+
         }
+      }
     }
 }

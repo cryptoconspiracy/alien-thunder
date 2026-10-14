@@ -1,0 +1,17 @@
+{
+    "KPlugin": {
+        "Id": "alien-thunder-network",
+        "Name": "Alien Thunder · Network",
+        "Name[pt_BR]": "Alien Thunder · Rede",
+        "Description": "Live upload and download speeds by application",
+        "Description[pt_BR]": "Upload e download em tempo real por aplicativo",
+        "Icon": "network-transmit-receive",
+        "Category": "System Information",
+        "Authors": [{ "Name": "Dan B" }],
+        "License": "MIT",
+        "Version": "1.2.2",
+        "Website": "https://github.com/cryptoconspiracy/alien-thunder"
+    },
+    "KPackageStructure": "Plasma/Applet",
+    "X-Plasma-API-Minimum-Version": "6.0"
+}

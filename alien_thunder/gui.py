@@ -8,7 +8,7 @@ import subprocess
 import sys
 import time
 
-from PySide6.QtCore import QPointF, QRect, QRectF, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QPointF, QRect, QRectF, QSize, QSocketNotifier, Qt, QTimer, Signal
 from PySide6.QtGui import (QAction, QBrush, QColor, QFont, QIcon, QPainter, QPainterPath, QPalette,
                            QPen, QPixmap)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
                                QRubberBand, QScrollArea, QSizePolicy, QSlider,
                                QSpinBox, QTabWidget, QToolButton, QVBoxLayout, QWidget)
 
-from . import donate, effects, engine, gmode, hw, layout, profiles
+from . import donate, effects, engine, gmode, hw, layout, mediakeys, profiles
 from .i18n import gettext as _
 from .i18n import ngettext
 
@@ -415,6 +415,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self._scroll(self._tab_colors()), _("Colors"))
         self.tabs.addTab(self._scroll(self._tab_effects()), _("Effects"))
         self.tabs.addTab(self._scroll(self._tab_chassis()), _("Chassis"))
+        self.tabs.addTab(self._scroll(self._tab_keys()), _("Keys"))
         self.tabs.addTab(self._scroll(self._tab_options()), _("Options"))
         mid.addWidget(self.tabs)
         root.addLayout(mid, 1)
@@ -609,6 +610,113 @@ class MainWindow(QMainWindow):
         v.addStretch(1)
         return w
 
+    def _tab_keys(self):
+        w = QWidget()
+        v = QVBoxLayout(w)
+        g = QGroupBox(_("Music keys"))
+        gv = QVBoxLayout(g)
+        note = QLabel(_("Keys that control whatever is playing music (Spotify, the browser, any player "
+                        "Plasma's media controls see). They belong to the profile, like the colors."))
+        note.setWordWrap(True)
+        note.setStyleSheet("color:#999;")
+        gv.addWidget(note)
+        self.keys_form = QFormLayout()
+        gv.addLayout(self.keys_form)
+        self.btn_record = QPushButton(QIcon.fromTheme("media-record"), _("Record a key…"))
+        self.btn_record.setToolTip(_("Press it, then the key you want, for example Fn+F3"))
+        self.btn_record.clicked.connect(self.start_record)
+        gv.addWidget(self.btn_record)
+        self.lbl_record = QLabel()
+        self.lbl_record.setWordWrap(True)
+        gv.addWidget(self.lbl_record)
+        v.addWidget(g)
+        v.addStretch(1)
+        self.record_fd = None
+        self.record_notifier = None
+        self.record_timer = QTimer(self, singleShot=True, interval=10000,
+                                   timeout=lambda: self.stop_record(_("No key in 10 seconds; try again.")))
+        return w
+
+    def _refresh_keys(self):
+        while self.keys_form.rowCount():
+            self.keys_form.removeRow(0)
+        if not self.profile["keys"]:
+            lbl = QLabel(_("(no keys yet)"))
+            lbl.setStyleSheet("color:#999;")
+            self.keys_form.addRow(lbl)
+        for k in self.profile["keys"]:
+            cb = QComboBox()
+            for a, name in mediakeys.ACTIONS.items():
+                cb.addItem(_(name), a)
+            cb.addItem(_("Nothing (remove)"), None)
+            cb.setCurrentIndex(max(0, cb.findData(k["action"])))
+            cb.currentIndexChanged.connect(lambda _i, cb=cb, scan=k["scan"]: self.on_key_action(scan, cb.currentData()))
+            self.keys_form.addRow(mediakeys.key_name(k["scan"]) + ":", cb)
+
+    def on_key_action(self, scan, action):
+        keys = self.profile["keys"]
+        if action is None:
+            keys[:] = [k for k in keys if k["scan"] != scan]
+            QTimer.singleShot(0, self._refresh_keys)  # not from inside the combo's own signal
+        else:
+            for k in keys:
+                if k["scan"] == scan:
+                    k["action"] = action
+        self.changed()
+
+    def start_record(self):
+        self.stop_record()
+        try:
+            self.record_fd = os.open(mediakeys.KEYBOARD, os.O_RDONLY | os.O_NONBLOCK)
+        except OSError as e:
+            self.lbl_record.setText(_("Can't read the keyboard (%s). Your user needs to be in the input group, "
+                                      "the same as for Fn+F1.") % e.strerror)
+            return
+        self.record_notifier = QSocketNotifier(self.record_fd, QSocketNotifier.Read, self)
+        self.record_notifier.activated.connect(self._on_record)
+        self.record_timer.start()
+        self.btn_record.setEnabled(False)
+        self.lbl_record.setText(_("Press the key now…"))
+
+    def stop_record(self, message=""):
+        self.record_timer.stop()
+        if self.record_notifier is not None:
+            self.record_notifier.setEnabled(False)
+            self.record_notifier.deleteLater()
+            self.record_notifier = None
+        if self.record_fd is not None:
+            os.close(self.record_fd)
+            self.record_fd = None
+        self.btn_record.setEnabled(True)
+        self.lbl_record.setText(message)
+
+    def _on_record(self, *_a):
+        try:
+            data = os.read(self.record_fd, mediakeys.EVENT.size * 64)
+        except BlockingIOError:
+            return
+        except OSError:
+            data = b""
+        if not data:
+            self.stop_record(_("The keyboard went away; try again."))
+            return
+        for scan, code in mediakeys.presses(data):
+            if not mediakeys.bindable(code):
+                self.lbl_record.setText(_("That key already does something on Linux, and pressing it would do both. "
+                                          "Pick one that does nothing, like Fn+F3 to Fn+F6."))
+                continue
+            name = mediakeys.key_name(scan)
+            if any(k["scan"] == scan for k in self.profile["keys"]):
+                self.stop_record(_("%s is already on the list.") % name)
+                return
+            used = {k["action"] for k in self.profile["keys"]}
+            action = next((a for a in mediakeys.ACTIONS if a not in used), "play_pause")
+            self.profile["keys"].append({"scan": scan, "action": action})
+            self._refresh_keys()
+            self.changed()
+            self.stop_record(_("%s added; pick what it does above.") % name)
+            return
+
     def _tab_options(self):
         w = QWidget()
         v = QVBoxLayout(w)
@@ -702,6 +810,7 @@ class MainWindow(QMainWindow):
             c.setColor(p["chassis"][zone]["color"])
         self.btn_pw_ac.setColor(p["chassis"]["power"]["ac"])
         self.btn_pw_bat.setColor(p["chassis"]["power"]["battery"])
+        self._refresh_keys()
         self._loading = False
         self._update_effect_ui()
         self._update_hint()

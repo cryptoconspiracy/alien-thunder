@@ -33,7 +33,17 @@ Switch G-Mode, the same as Fn+F1; without an argument, show whether it is on.
 .TP
 .BR overlay " [\fBon\fR|\fBoff\fR|\fBshow\fR \fIitem\fR|\fBhide\fR \fIitem\fR|\fBitems\fR \fIitem,...\fR|\fBstatus\fR]"
 Control the bar of readouts that floats above other windows. Items are cpu_temp,
-cpu_load, gpu_temp, gpu_mem, cpu_fan, gpu_fan, ram and ram_gb.
+cpu_load, gpu_temp, gpu_mem, cpu_fan, gpu_fan, ram, ram_gb, download and upload.
+Network gauges use a ten-second moving average.
+Use "overlay style analog" or "overlay style digital" to select the display,
+and "overlay size 50" through "overlay size 250" to set its size in percent.
+.TP
+.BR desktop " [\fBon\fR|\fBoff\fR|\fBstatus\fR]"
+Control the horizontal desktop gauge bar. Its widget settings select the readings
+and analog or digital style independently of the overlay.
+.TP
+.BR network " [\fBon\fR|\fBoff\fR|\fBstatus\fR]"
+Control the optional per-application network widget on the desktop.
 .TP
 .BR import-windows " [\fB\-\-list\fR | \fB\-\-id\fR \fIid\fR ...]"
 Import Alienware Command Center presets from a Windows partition mounted at /mnt/windows.

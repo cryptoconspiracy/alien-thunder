@@ -72,6 +72,7 @@ fi
 rm -rf "$data/alien-thunder"
 
 echo ">> translations"
+cp "$repo/plasma/alien-thunder-network/contents/ui/NetworkData.qml" "$repo/alien_thunder/"
 for po in "$repo"/po/*/alien-thunder.po; do
   lang=$(basename "$(dirname "$po")")
   mkdir -p "$repo/alien_thunder/locale/$lang/LC_MESSAGES"
@@ -104,28 +105,38 @@ systemctl --user restart alien-thunder.service 2>/dev/null || true
 systemctl --user is-active -q alien-thunder-overlay.service && systemctl --user restart alien-thunder-overlay.service
 
 if command -v kpackagetool6 >/dev/null; then
-  echo ">> panel widget"
-  widget=$repo/plasma/alien-thunder
-  for po in "$repo"/po/*/plasma_applet_alien-thunder.po; do
+  echo ">> panel and optional network widgets"
+  widgets_changed=false
+  for widget_id in alien-thunder alien-thunder-network; do
+  widget=$repo/plasma/$widget_id
+  if [[ $widget_id == alien-thunder-network ]]; then
+    cp "$repo/plasma/alien-thunder/contents/ui/configSupport.qml" "$widget/contents/ui/"
+    mkdir -p "$widget/contents/images"
+    cp "$repo"/plasma/alien-thunder/contents/images/donate-*.png "$widget/contents/images/"
+  fi
+  cp "$repo/alien_thunder/AnalogDial.qml" "$repo/alien_thunder/AlertLed.qml" "$widget/contents/ui/"
+  if [[ $widget_id == alien-thunder ]]; then
+    cp "$repo/alien_thunder/BarContent.qml" "$repo/alien_thunder/NetworkData.qml" "$widget/contents/ui/"
+  fi
+  for po in "$repo"/po/*/plasma_applet_$widget_id.po; do
     lang=$(basename "$(dirname "$po")")
     mkdir -p "$widget/contents/locale/$lang/LC_MESSAGES"
-    msgfmt -o "$widget/contents/locale/$lang/LC_MESSAGES/plasma_applet_alien-thunder.mo" "$po"
+    msgfmt -o "$widget/contents/locale/$lang/LC_MESSAGES/plasma_applet_$widget_id.mo" "$po"
   done
-  installed=$data/plasma/plasmoids/alien-thunder
+  installed=$data/plasma/plasmoids/$widget_id
   if [[ -d $installed ]]; then
     # kpackagetool6 --upgrade removes the widget before reinstalling it, and the
     # panel drops anything that disappears, even for a moment.
-    changed=false
-    diff -rq "$widget" "$installed" >/dev/null 2>&1 || changed=true
+    diff -rq "$widget" "$installed" >/dev/null 2>&1 || widgets_changed=true
     cp -rT "$widget" "$installed"
-    # A running plasmashell keeps the QML it already loaded; new files only take
-    # effect after it restarts. The panel blinks for a second or two.
-    if $changed && systemctl --user is-active -q plasma-plasmashell.service; then
-      echo "   restarting plasmashell so the panel picks up the new widget"
-      systemctl --user restart plasma-plasmashell.service
-    fi
   else
     kpackagetool6 --type Plasma/Applet --install "$widget" >/dev/null
+  fi
+  done
+  # Loaded widgets need a single shell restart after both packages are copied.
+  if $widgets_changed && systemctl --user is-active -q plasma-plasmashell.service; then
+    echo "   restarting plasmashell so it picks up the updated widgets"
+    systemctl --user restart plasma-plasmashell.service
   fi
 fi
 

@@ -16,7 +16,7 @@ _SANDBOX = tempfile.mkdtemp(prefix="alien-thunder-tests-")
 for _var in ("XDG_CONFIG_HOME", "XDG_STATE_HOME", "XDG_RUNTIME_DIR"):
     os.environ[_var] = os.path.join(_SANDBOX, _var.lower())
 
-from alien_thunder import effects, engine, gmode, layout, profiles, protocol, sensors  # noqa: E402
+from alien_thunder import effects, engine, gmode, layout, mediakeys, profiles, protocol, sensors  # noqa: E402
 from alien_thunder.profiles import hex_to_rgb  # noqa: E402
 
 
@@ -268,6 +268,157 @@ class GMode(unittest.TestCase):
         eng.gmode = False
         (back,) = self.apply(eng, prof)
         self.assertEqual(back, off)
+
+
+class MediaKeys(unittest.TestCase):
+    def ev(self, typ, code, value):
+        return mediakeys.EVENT.pack(0, 0, typ, code, value)
+
+    def press(self, scan, code=mediakeys.KEY_UNKNOWN, value=1):
+        return self.ev(4, 4, scan) + self.ev(1, code, value) + self.ev(0, 0, 0)
+
+    def test_presses(self):
+        # what the m16 R2's USB keyboard sends for Fn+F3: the HID usage, then KEY_UNKNOWN
+        self.assertEqual(mediakeys.presses(self.press(0xC0052)), [(0xC0052, 240)])
+        self.assertEqual(mediakeys.presses(self.press(0xC0052, value=0)), [])  # release
+        self.assertEqual(mediakeys.presses(self.press(0xC0052, value=2)), [])  # repeat
+        self.assertEqual(mediakeys.presses(self.press(0xC0053) + self.press(0xC0055)),
+                         [(0xC0053, 240), (0xC0055, 240)])
+        # a scan from an earlier report never sticks to a key without one
+        self.assertEqual(mediakeys.presses(self.press(0xC0054) + self.ev(1, 240, 1)), [(0xC0054, 240)])
+        self.assertTrue(mediakeys.bindable(240))
+        self.assertFalse(mediakeys.bindable(61))  # plain F3 already does something
+
+    def test_profile_keys(self):
+        self.assertEqual(profiles.normalize({})["keys"], [])
+        p = profiles.normalize({"keys": [{"scan": "0xc0052", "action": "previous"},
+                                         {"scan": 0xC0052, "action": "next"},  # same key twice
+                                         {"scan": 0xC0053, "action": "launch_rockets"},
+                                         {"scan": 0xC0055, "action": "next"}]})
+        self.assertEqual(p["keys"], [{"scan": 0xC0052, "action": "previous"}, {"scan": 0xC0055, "action": "next"}])
+        self.assertEqual(profiles.normalize(p), p)
+        self.assertEqual(profiles.normalize({"keys": mediakeys.EXAMPLE})["keys"], mediakeys.EXAMPLE)
+        self.assertEqual(mediakeys.action_for(p, 0xC0055), "next")
+        self.assertIsNone(mediakeys.action_for(p, 0xC0054))
+        with self.assertRaises(profiles.ProfileError):
+            profiles.normalize({"keys": [{"action": "next"}]})
+
+    def test_player_choice(self):
+        calls, position = [], [0]
+
+        class Obj:
+            def __init__(self, name, status):
+                self.name, self.status = name, status
+
+            def Get(self, _iface, prop, **_k):
+                if self.status is None:
+                    raise RuntimeError("gone")
+                return {"PlaybackStatus": self.status, "CanSeek": True, "Position": position[0]}[prop]
+
+            def get_dbus_method(self, method, _iface):
+                return lambda *a, **_k: calls.append((self.name, method) + a)
+
+        class Bus:
+            players = {"org.mpris.MediaPlayer2.vlc": "Paused", "org.mpris.MediaPlayer2.brave": "Playing",
+                       "org.mpris.MediaPlayer2.dead": None, "org.kde.other": "Playing"}
+
+            def list_names(self):
+                return list(self.players)
+
+            def get_object(self, name, _path):
+                return Obj(name, self.players[name])
+
+        bus = Bus()
+        self.assertEqual(mediakeys.send("play_pause", bus), "org.mpris.MediaPlayer2.brave")
+        self.assertEqual(calls, [("org.mpris.MediaPlayer2.brave", "PlayPause")])
+        # previous: back to the start first, and a second press right after goes back a track
+        position[0] = 42_000_000
+        mediakeys.send("previous", bus)
+        self.assertEqual(calls[-1], ("org.mpris.MediaPlayer2.brave", "Seek", -42_000_000))
+        position[0] = 400_000
+        mediakeys.send("previous", bus)
+        self.assertEqual(calls[-1], ("org.mpris.MediaPlayer2.brave", "Previous"))
+        bus.players["org.mpris.MediaPlayer2.brave"] = "Stopped"
+        self.assertEqual(mediakeys.player(bus), "org.mpris.MediaPlayer2.vlc")
+        bus.players = {}
+        self.assertIsNone(mediakeys.send("next", bus))
+
+    def test_native_browser_preferred_when_both_playing(self):
+        class Obj:
+            def __init__(self, status):
+                self.status = status
+
+            def Get(self, _iface, _prop, **_kwargs):
+                return self.status
+
+        class Bus:
+            players = {"org.mpris.MediaPlayer2.brave.instance123": "Playing",
+                       "org.mpris.MediaPlayer2.plasma-browser-integration": "Playing"}
+
+            def list_names(self):
+                return list(self.players)
+
+            def get_object(self, name, _path):
+                return Obj(self.players[name])
+
+        bus = Bus()
+        browser = "org.mpris.MediaPlayer2.brave.instance123"
+        integration = "org.mpris.MediaPlayer2.plasma-browser-integration"
+        self.assertEqual(mediakeys.player(bus), browser)
+        bus.players = dict(reversed(list(bus.players.items())))
+        self.assertEqual(mediakeys.player(bus), browser)
+        bus.players[browser] = "Paused"
+        self.assertEqual(mediakeys.player(bus), integration)
+        bus.players[browser] = "Playing"
+        bus.players[integration] = "Paused"
+        self.assertEqual(mediakeys.player(bus), browser)
+        del bus.players[integration]
+        self.assertEqual(mediakeys.player(bus), browser)
+
+    def test_browser_seek_uses_matching_integration_only(self):
+        calls = []
+        browser = "org.mpris.MediaPlayer2.brave.instance123"
+        integration = "org.mpris.MediaPlayer2.plasma-browser-integration"
+
+        class Obj:
+            def __init__(self, name):
+                self.name = name
+                self.position = 42_000_000
+                self.pid = 123
+
+            def Get(self, _iface, prop, **_kwargs):
+                return {"PlaybackStatus": "Playing", "CanSeek": True,
+                        "Position": self.position, "Metadata": {"kde:pid": self.pid}}[prop]
+
+            def get_dbus_method(self, method, _iface):
+                return lambda *a, **_kwargs: calls.append((self.name, method) + a)
+
+        class Bus:
+            def __init__(self):
+                self.players = {integration: Obj(integration), browser: Obj(browser)}
+
+            def list_names(self):
+                return list(self.players)
+
+            def get_object(self, name, _path):
+                return self.players[name]
+
+        bus = Bus()
+        mediakeys.send("previous", bus)
+        self.assertEqual(calls[-1], (integration, "Seek", -42_000_000))
+        # Native position can be stale after KDE seeks; read KDE's position again.
+        bus.players[integration].position = 400_000
+        mediakeys.send("previous", bus)
+        self.assertEqual(calls[-1], (browser, "Previous"))
+        for action, method in (("next", "Next"), ("play_pause", "PlayPause"), ("stop", "Stop")):
+            mediakeys.send(action, bus)
+            self.assertEqual(calls[-1], (browser, method))
+        bus.players[integration].pid = 456  # another browser must not be controlled
+        mediakeys.send("previous", bus)
+        self.assertEqual(calls[-1], (browser, "Seek", -42_000_000))
+        del bus.players[integration]
+        mediakeys.send("previous", bus)
+        self.assertEqual(calls[-1], (browser, "Seek", -42_000_000))
 
 
 class Sensors(unittest.TestCase):

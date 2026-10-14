@@ -12,6 +12,7 @@ widget changes them through `alien-thunder overlay ...`.
 from __future__ import annotations
 
 import json
+import math
 import os
 import subprocess
 import sys
@@ -22,11 +23,21 @@ _ = i18n.gettext
 
 OVERLAY_FILE = os.path.join(paths.CONFIG_DIR, "overlay.json")
 UNIT = "alien-thunder-overlay.service"
-ITEMS = ("cpu_temp", "cpu_load", "gpu_temp", "gpu_mem", "cpu_fan", "gpu_fan", "ram", "ram_gb")
+NETWORK_ITEMS = ("download", "upload")
+ITEMS = ("cpu_temp", "cpu_load", "gpu_temp", "gpu_mem", "cpu_fan", "gpu_fan", "ram", "ram_gb") + NETWORK_ITEMS
 
 
 def default_config() -> dict:
-    return {"screen": "", "x": 24, "y": 80, "items": {k: True for k in ITEMS}}
+    return {"screen": "", "x": 24, "y": 80, "scale": 1.0, "style": "digital",
+            "items": {k: k not in NETWORK_ITEMS for k in ITEMS}}
+
+
+def valid_scale(value) -> float:
+    try:
+        scale = float(value)
+    except (TypeError, ValueError):
+        return 1.0
+    return max(0.5, min(2.5, scale)) if math.isfinite(scale) else 1.0
 
 
 def load_config() -> dict:
@@ -36,6 +47,9 @@ def load_config() -> dict:
             saved = json.load(f)
     except (OSError, ValueError):
         return cfg
+    cfg["scale"] = valid_scale(saved.get("scale", 1.0))
+    if saved.get("style") in ("digital", "analog"):
+        cfg["style"] = saved["style"]
     for key in ("screen", "x", "y"):
         if key in saved:
             cfg[key] = saved[key]
@@ -52,7 +66,8 @@ def save_config(cfg: dict) -> None:
 
 def labels() -> dict:
     return {"cpu_temp": _("CPU"), "cpu_load": _("CPU load"), "gpu_temp": _("GPU"), "gpu_mem": _("VRAM"),
-            "cpu_fan": _("CPU fan"), "gpu_fan": _("GPU fan"), "ram": _("RAM"), "ram_gb": _("RAM")}
+            "cpu_fan": _("CPU fan"), "gpu_fan": _("GPU fan"), "ram": _("RAM"), "ram_gb": _("RAM"),
+            "download": _("Download"), "upload": _("Upload")}
 
 
 def main() -> int:
@@ -91,7 +106,7 @@ def main() -> int:
         def _reload(self, *_a):
             # Our own saves land here too; they match what we hold, so nothing redraws.
             cfg = load_config()
-            if cfg["items"] != self._cfg["items"]:
+            if any(cfg[k] != self._cfg[k] for k in ("items", "scale", "style")):
                 # Different readings mean a different width; see relaunch().
                 self.relaunch()
             if cfg != self._cfg:
@@ -165,10 +180,18 @@ def main() -> int:
         # over is cheap and builds the bar on the right screen, at the right size.
         @Slot()
         def relaunch(self):
-            print("overlay: starting over (screen or readings changed)", file=sys.stderr, flush=True)
+            print("overlay: starting over (screen, readings or size changed)", file=sys.stderr, flush=True)
             sys.stdout.flush()
             sys.stderr.flush()
             os.execv(sys.executable, [sys.executable] + sys.orig_argv[1:])
+
+        @Slot(float)
+        def resize(self, scale):
+            scale = valid_scale(scale)
+            if scale != self._cfg["scale"]:
+                self._cfg["scale"] = scale
+                save_config(self._cfg)
+                self.relaunch()
 
         @Slot()
         def close(self):
@@ -203,7 +226,7 @@ def main() -> int:
 
 
 def command(args: list[str]) -> int:
-    """alien-thunder overlay [run|on|off|show ITEM|hide ITEM|items ITEM,ITEM,...|status]"""
+    """alien-thunder overlay [run|on|off|show ITEM|hide ITEM|items LIST [STYLE]|style STYLE|status]"""
     action = args[0] if args else "status"
     if action == "run":
         return main()
@@ -213,12 +236,25 @@ def command(args: list[str]) -> int:
     cfg = load_config()
     if action in ("show", "hide") and len(args) == 2 and args[1] in ITEMS:
         cfg["items"][args[1]] = action == "show"
-    elif action == "items" and len(args) == 2:
+    elif action == "style" and len(args) == 2 and args[1] in ("digital", "analog"):
+        cfg["style"] = args[1]
+    elif action == "size" and len(args) == 2:
+        try:
+            percent = int(args[1])
+        except ValueError:
+            percent = 0
+        if not 50 <= percent <= 250:
+            print(_("Overlay size must be between 50 and 250 percent."), file=sys.stderr)
+            return 2
+        cfg["scale"] = percent / 100
+    elif action == "items" and len(args) in (2, 3) and (len(args) == 2 or args[2] in ("digital", "analog")):
         # the whole selection at once, so the bar restarts once, not once per reading
         wanted = set(args[1].split(",")) & set(ITEMS)
-        if cfg["items"] == {k: k in wanted for k in ITEMS}:
+        style = args[2] if len(args) == 3 else cfg["style"]
+        if cfg["items"] == {k: k in wanted for k in ITEMS} and cfg["style"] == style:
             return 0
         cfg["items"] = {k: k in wanted for k in ITEMS}
+        cfg["style"] = style
     elif action == "status":
         running = subprocess.run(["systemctl", "--user", "is-active", "-q", UNIT]).returncode == 0
         print(json.dumps({"running": running, **cfg}))
@@ -226,6 +262,8 @@ def command(args: list[str]) -> int:
     else:
         print(_("usage: alien-thunder overlay [run|on|off|show ITEM|hide ITEM|items ITEM,ITEM,...|status]"), file=sys.stderr)
         print(_("items: %s") % " ".join(ITEMS), file=sys.stderr)
+        print("style: digital | analog", file=sys.stderr)
+        print("size: 50–250 (%)", file=sys.stderr)
         return 2
     save_config(cfg)
     return 0
