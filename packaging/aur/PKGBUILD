@@ -1,6 +1,6 @@
 # Maintainer: Dan B <unknown@cryptoconspiracy.io>
 pkgname=alien-thunder
-pkgver=1.3.0
+pkgver=1.3.1
 pkgrel=1
 pkgdesc="Per-key RGB, G-Mode on Fn+F1, and temperature and fan readouts (panel widget and floating overlay) for Alienware laptops on KDE Plasma"
 arch=('any')
