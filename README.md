@@ -214,7 +214,8 @@ widget, the user services, the udev rule and the icons. Each user then runs
 `make release VERSION=1.2.3` bumps the version everywhere, tags it, publishes the GitHub
 release with the widget, updates the AUR recipe and the openSUSE Build Service packages,
 waits for the builds, and copies them into `packages/VERSION` for the download page.
-`DRY_RUN=1` does it all in a throwaway clone without publishing.
+`DRY_RUN=1` does it all in a throwaway clone without publishing. If it stops while OBS is
+building, `make packages VERSION=1.2.3` picks up from there.
 
 ### Updating
 

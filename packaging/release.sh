@@ -3,6 +3,7 @@
 #
 #   make release VERSION=1.2.1            bump, tag, GitHub release, AUR hash, OBS, packages/VERSION
 #   make release VERSION=1.2.1 DRY_RUN=1  the same in a throwaway clone, nothing leaves the machine
+#   make packages VERSION=1.2.1           resumes after an interruption: waits for OBS, fills packages/VERSION
 #
 # It uses the gh and osc logins of this machine; no password is stored anywhere else.
 # The changelog is the list of commit subjects since the last tag.
@@ -125,20 +126,13 @@ if [[ $dry == 1 ]]; then
   echo "   would commit the above to OBS"
 else
   (cd "$obs" && "${osc[@]}" commit -m "alien-thunder $version" >/dev/null)
-  step "waiting for the OBS builds"
-  for _ in $(seq 1 120); do
-    results=$("${osc[@]}" results "$obs_prj" "$obs_pkg")
-    grep -qE 'building|scheduled|dispatching|finished|signing|blocked|\*|unknown' <<<"$results" || break
-    sleep 20
-  done
-  echo "$results"
-  grep -qE 'failed|unresolvable|broken' <<<"$results" && fail "an OBS build failed: ${osc[*]} buildlog $obs_prj $obs_pkg <repo> x86_64"
+  # The KDE Store files go to ~/Downloads now, so an interrupted wait below doesn't lose them.
+  mkdir -p "$HOME/Downloads/alien-thunder-kde-store"
+  cp "$work"/alien-thunder*-"$version".plasmoid "$HOME/Downloads/alien-thunder-kde-store/"
 
-  step "packages/$version: the built packages, one per distribution, for people who'd rather download a file"
-  packaging/packages.sh "$version"
-  git add packages
-  git commit -q -m "Packages: $version"
-  git push -q origin main
+  step "packages/$version: waits for the OBS builds, one package per distribution, for people who'd rather download a file"
+  echo "   if this stops, resume with: make packages VERSION=$version"
+  packaging/packages.sh --commit "$version"
 fi
 
 step "AUR"
@@ -152,9 +146,4 @@ fi
 
 step "done"
 echo "KDE Store: upload $work/alien-thunder-$version.plasmoid by hand at https://store.kde.org/product/add"
-if [[ $dry != 1 ]]; then
-  mkdir -p "$HOME/Downloads/alien-thunder-kde-store"
-  cp "$work/alien-thunder-$version.plasmoid" "$HOME/Downloads/alien-thunder-kde-store/"
-  cp "$work/alien-thunder-network-$version.plasmoid" "$HOME/Downloads/alien-thunder-kde-store/"
-  echo "  (a copy is in ~/Downloads/alien-thunder-kde-store)"
-fi
+[[ $dry == 1 ]] || echo "  (a copy is in ~/Downloads/alien-thunder-kde-store)"

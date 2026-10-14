@@ -61,4 +61,9 @@ release:
 	@test -n "$(VERSION)" || { echo "usage: make release VERSION=1.2.3 [DRY_RUN=1]"; exit 1; }
 	DRY_RUN=$(DRY_RUN) packaging/release.sh $(VERSION)
 
-.PHONY: all locales check check-qml install release
+# The last step of a release on its own, to resume one that stopped while OBS was building.
+packages:
+	@test -n "$(VERSION)" || { echo "usage: make packages VERSION=1.2.3"; exit 1; }
+	packaging/packages.sh --commit $(VERSION)
+
+.PHONY: all locales check check-qml install release packages

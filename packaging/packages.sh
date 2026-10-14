@@ -1,15 +1,19 @@
 #!/bin/bash
-# Copies the packages OBS built for VERSION into packages/VERSION/, one file per
+# Waits for the OBS builds of VERSION, copies them into packages/VERSION/, one file per
 # distribution with the distribution in its name, and writes the install page.
 #
-#   packaging/packages.sh 0.4.0
+#   packaging/packages.sh 0.4.0            fills packages/0.4.0
+#   packaging/packages.sh --commit 0.4.0   and commits and pushes it (make packages VERSION=0.4.0)
 #
-# release.sh runs it once the OBS builds are done; run it by hand to fill in an older
-# version. The files are the same ones the OBS repositories serve, signed by OBS.
+# release.sh runs it after uploading to OBS; run it by hand to resume a release that
+# stopped before this step. OBS keeps only the latest build, so an older version can't be
+# filled in. The files are the same ones the OBS repositories serve, signed by OBS.
 
 set -euo pipefail
 
-version=${1:?usage: packaging/packages.sh VERSION}
+commit=0
+[[ ${1:-} == --commit ]] && { commit=1; shift; }
+version=${1:?usage: packaging/packages.sh [--commit] VERSION}
 pkg=alien-thunder
 name="Alien Thunder"
 gh_repo=cryptoconspiracy/alien-thunder
@@ -37,6 +41,49 @@ distros=(
   "Arch|arch|Arch Linux, Garuda, Manjaro, EndeavourOS, CachyOS|pkg.tar.zst"
 )
 
+fail() { echo "packages: $*" >&2; exit 1; }
+[[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "VERSION must look like 1.2.3"
+
+# One line per repository: name and state. "finished" with "succeeded" in its details
+# counts as built: the files can be downloaded already, and OBS can sit on "finished" for
+# hours before it says "succeeded". A repository whose last build is still an older
+# version is waiting too, since right after an upload OBS shows the previous result.
+obs_states() {
+  "${osc[@]}" api "/build/$obs_prj/_result?package=$pkg" | python3 -I -c '
+import sys, xml.etree.ElementTree as ET
+for r in ET.parse(sys.stdin).getroot():
+    s = r.find("status")
+    code = s.get("code") if s is not None else "unknown"
+    details = (s.findtext("details") or "") if s is not None else ""
+    if code == "finished":
+        code = details.split()[0] if details else "finished"
+    print(r.get("repository"), code)'
+}
+# The repositories whose binaries are already VERSION, from one listing of all of them.
+with_version() {
+  "${osc[@]}" ls -b "$obs_prj" "$pkg" 2>/dev/null \
+    | awk -v re="^ ${pkg}[-_]${version//./[.]}-" '/^[^ ]/ { r = $0; sub("/.*", "", r) } $0 ~ re { print r }' | sort -u
+}
+
+echo "packages: waiting for the OBS builds of $version"
+for ((i = 0; ; i++)); do
+  ((i < 180)) || fail "OBS still building after an hour: ${osc[*]} results $obs_prj $pkg"
+  pending=()
+  enabled=()
+  ready=" $(with_version | tr '\n' ' ') "
+  while read -r obs code; do
+    case $code in
+      disabled|excluded) ;;
+      failed|unresolvable|broken) fail "the $obs build $code: ${osc[*]} buildlog $obs_prj $pkg $obs x86_64" ;;
+      succeeded) enabled+=("$obs"); [[ $ready == *" $obs "* ]] || pending+=("$obs") ;;
+      *) enabled+=("$obs"); pending+=("$obs") ;;
+    esac
+  done < <(obs_states)
+  ((${#pending[@]})) || break
+  ((i % 6)) || echo "  still waiting for: ${pending[*]}"
+  sleep 20
+done
+
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 rm -rf "$out"
@@ -45,15 +92,17 @@ mkdir -p "$out"
 built=()
 for d in "${distros[@]}"; do
   IFS='|' read -r obs label _ fmt <<<"$d"
-  # A distribution the package doesn't build for (too old, a library it lacks) is left out.
-  "${osc[@]}" getbinaries -q -d "$work/$obs" "$obs_prj" "$pkg" "$obs" x86_64 >/dev/null 2>&1 || true
+  # A distribution the package doesn't build for (too old, a library it lacks) is disabled
+  # in OBS and left out; one that builds and still has no file here stops the release.
+  [[ " ${enabled[*]} " == *" $obs "* ]] || continue
+  "${osc[@]}" getbinaries -q -d "$work/$obs" "$obs_prj" "$pkg" "$obs" x86_64 >/dev/null
   case $fmt in
     rpm) src=$(ls "$work/$obs"/$pkg-"$version"-*.rpm 2>/dev/null | grep -v '\.src\.rpm$' || true) ;;
     deb) src=$(ls "$work/$obs"/${pkg}_"$version"-*_*.deb 2>/dev/null || true) ;;
     *) src=$(ls "$work/$obs"/$pkg-"$version"-*.pkg.tar.zst 2>/dev/null || true) ;;
   esac
-  if [[ -z $src ]]; then echo "packages: no $version build for $obs, left out" >&2; continue; fi
-  [[ $(wc -l <<<"$src") == 1 && -f $src ]] || { echo "packages: more than one $version build for $obs" >&2; exit 1; }
+  [[ -n $src ]] || fail "OBS built $obs but no $version file came down"
+  [[ $(wc -l <<<"$src") == 1 && -f $src ]] || fail "more than one $version build for $obs"
   built+=("$d")
   arch=$(basename "$src" | grep -oE '(noarch|all|any|x86_64|amd64)' | tail -1)
   cp "$src" "$out/$pkg-$version-$label.$arch.$fmt"
@@ -104,5 +153,17 @@ EOF
 latest=$(ls "$repo/packages" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
 sed "s|(../../README.md#install)|(../README.md#install)|; s|^# $name .*: install|# $name $latest: install|" \
   "$repo/packages/$latest/README.md" > "$repo/packages/README.md"
+# Every repository OBS builds must be in the folder; the distros list above needs a line
+# for a repository added to OBS.
+((${#built[@]} == ${#enabled[@]})) || fail "OBS builds ${enabled[*]} but packages/$version has ${#built[@]} files; add the missing ones to distros"
+(cd "$out" && sha256sum -c --quiet SHA256SUMS)
 echo "packages/$version:"
 ls "$out"
+
+if ((commit)); then
+  cd "$repo"
+  git add packages
+  git commit -q -m "Packages: $version"
+  git push -q origin main
+  echo "packages: committed and pushed"
+fi
