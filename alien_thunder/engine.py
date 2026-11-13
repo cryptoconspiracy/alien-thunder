@@ -44,7 +44,8 @@ def zone_animations(profile: dict) -> dict[int, effects.Animation]:
     for name, zid in ZONES.items():
         z = profile["chassis"][name]
         if z["effect"] not in ("static", "off"):
-            out[zid] = effects.Animation(z["effect"], {zid: colors[zid]}, z["speed"])
+            out[zid] = effects.Animation(z["effect"], {zid: colors[zid]}, z["speed"],
+                                         message=z.get("message", "SOS"), phase=0.5 if zid == protocol.ZONE_LOGO else 0.0)
     return out
 
 
@@ -88,6 +89,9 @@ class Engine:
         self.last_ch = None
         self.sw: effects.Animation | None = None
         self.sw_zones: dict[int, effects.Animation] = {}
+        self.fan_zones: set[int] = set()
+        self.audio_zones: set[int] = set()
+        self.fan_rpm: int | None = None
         self.zone_base: dict[int, tuple[int, int, int]] = {}
         self.last_zone_frame = None
         self.sw_t0 = time.monotonic()
@@ -131,6 +135,8 @@ class Engine:
         colors = zone_colors(profile)
         if backend == "alienrgb":
             self.sw_zones = {}
+            self.fan_zones = set()
+            self.audio_zones = set()
             for name, zid in ZONES.items():
                 if profile["chassis"][name]["effect"] not in ("static", "off"):
                     self.log(f"{name}: effects need the hidraw backend; using a fixed color")
@@ -141,15 +147,51 @@ class Engine:
         # redrawn frame by frame with the same static-color packets that do.
         self.zone_base = colors
         self.sw_zones = zone_animations(profile)
-        self._send_zones(self._zone_frame(time.monotonic() - self.sw_t0))
+        self.fan_zones = {zid for name, zid in ZONES.items()
+                          if profile["chassis"][name].get("fan_reactive")
+                          and profile["chassis"][name]["effect"] == "breathing"}
+        self.audio_zones = {zid for name, zid in ZONES.items()
+                            if profile["chassis"][name]["effect"] == "audio"}
+        t = time.monotonic() - self.sw_t0
+        self._apply_fan_speed(t)
+        self._send_zones(self._zone_frame(t))
         self.log("chassis: touchpad and logo set"
                  + (f" (effects: {', '.join(a.name for a in self.sw_zones.values())})" if self.sw_zones else ""))
 
     def _zone_frame(self, t: float) -> dict[int, tuple[int, int, int]]:
         frame = dict(self.zone_base)
         for zid, anim in self.sw_zones.items():
+            if zid in self.fan_zones and self.fan_rpm is not None and self.fan_rpm <= 0:
+                frame[zid] = (0, 0, 0)
+                continue
             frame.update(anim.frame(t))
         return frame
+
+    def _apply_fan_speed(self, t: float):
+        if self.fan_rpm is None:
+            return
+        speed = effects.fan_breath_speed(self.fan_rpm)
+        if speed is not None:
+            for zid in self.fan_zones:
+                anim = self.sw_zones.get(zid)
+                if anim is not None:
+                    anim.set_speed(t, speed)
+
+    def set_fan_rpm(self, cpu_rpm: int | None, gpu_rpm: int | None):
+        """Uses the faster fan so either CPU or GPU load is visible on the chassis."""
+        readings = [rpm for rpm in (cpu_rpm, gpu_rpm) if rpm is not None]
+        rpm = max(readings) if readings else None
+        if rpm == self.fan_rpm:
+            return
+        self.fan_rpm = rpm
+        self._apply_fan_speed(time.monotonic() - self.sw_t0)
+        self.last_zone_frame = None
+
+    def set_audio_level(self, level: float):
+        for zid in self.audio_zones:
+            anim = self.sw_zones.get(zid)
+            if anim is not None:
+                anim.set_level(level)
 
     def _send_zones(self, frame: dict[int, tuple[int, int, int]], lock_timeout: float = 10.0):
         if frame == self.last_zone_frame:

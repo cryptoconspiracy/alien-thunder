@@ -5,7 +5,7 @@
 - applies it again when config.json or the active profile's file changes (GFileMonitor);
 - applies it again when the keyboard or the AW-ELC come back (hidraw uevents through
   GUdev, plus a check every 20 s);
-- runs the software effects (a GLib timer, up to 20 fps) and stops cleanly on SIGTERM;
+- runs the software effects (a GLib timer, 40 to 50 fps) and stops cleanly on SIGTERM;
 - G-Mode: Fn+F1 toggles the performance power profile, and F1 stays white while it's
   on, whether the switch came from the key or from Plasma's applet (see gmode.py);
 - media keys: Fn+F3 to Fn+F6 send the active profile's action to the music player over
@@ -35,7 +35,7 @@ try:
 except (ValueError, ImportError):  # no libgudev: only the periodic check is left
     GUdev = None
 
-from . import engine as engine_mod  # noqa: E402
+from . import audio, engine as engine_mod  # noqa: E402
 from . import gmode, hw, mediakeys, paths, profiles, sensors  # noqa: E402
 
 BACKOFF = (1, 2, 3, 5, 8, 13, 20, 30)
@@ -56,6 +56,8 @@ class Daemon(dbus.service.Object):
         self.retry_n = 0
         self.debounce_id = 0
         self.sw_id = 0
+        self.audio_id = 0
+        self.audio = audio.DefaultOutput()
         self.last_error = ""
         self.last_ok = 0.0
         self.sleeping = False
@@ -153,11 +155,30 @@ class Daemon(dbus.service.Object):
                 self.sw_id = GLib.timeout_add(interval, self._sw_tick)
         else:
             self.stop_sw()
+        if self.engine.audio_zones and not self.sleeping:
+            if not self.audio_id:
+                self.audio_id = GLib.timeout_add(25, self._audio_tick)
+        else:
+            self.stop_audio()
 
     def stop_sw(self):
         if self.sw_id:
             GLib.source_remove(self.sw_id)
             self.sw_id = 0
+
+    def stop_audio(self):
+        if self.audio_id:
+            GLib.source_remove(self.audio_id)
+            self.audio_id = 0
+        self.audio.close()
+
+    def _audio_tick(self):
+        if not self.engine.audio_zones or self.sleeping:
+            self.audio_id = 0
+            self.audio.close()
+            return False
+        self.engine.set_audio_level(self.audio.level())
+        return True
 
     def _sw_tick(self):
         if not self.engine.animating or self.sleeping:
@@ -259,6 +280,7 @@ class Daemon(dbus.service.Object):
         values = self.sensors.read()
         if any(values[k] is None for k in self.sensors.files):
             self.sensors.rescan()
+        self.engine.set_fan_rpm(values["cpu_fan"], values["gpu_fan"])
         values["gmode"] = self.engine.gmode
         try:
             sensors.publish(values)
@@ -394,6 +416,7 @@ class Daemon(dbus.service.Object):
     def quit(self):
         log("shutting down")
         self.stop_sw()
+        self.stop_audio()
         if self.key_fd is not None:
             GLib.source_remove(self.key_watch)
             os.close(self.key_fd)

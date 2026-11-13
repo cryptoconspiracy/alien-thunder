@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import os
 import subprocess
 import sys
 import time
 
 from PySide6.QtCore import QPointF, QRect, QRectF, QSize, QSocketNotifier, Qt, QTimer, Signal
-from PySide6.QtGui import (QAction, QBrush, QColor, QFont, QIcon, QPainter, QPainterPath, QPalette,
+from PySide6.QtGui import (QAction, QBrush, QColor, QFont, QIcon, QImage, QPainter, QPainterPath, QPalette,
                            QPen, QPixmap)
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox,
                                QColorDialog, QComboBox, QDialog, QDialogButtonBox, QFormLayout,
@@ -74,6 +75,78 @@ class ColorButton(QPushButton):
         c = QColorDialog.getColor(QColor(self._color), self, self.title)
         if c.isValid():
             self.setColor(c.name(), emit=True)
+
+
+class ChassisPreview(QWidget):
+    """A small rendering of the touchpad and Alien head using their live effect colors."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.frame = {}
+        self._alien_masks = {}
+        self.setMinimumHeight(168)
+
+    def set_frame(self, frame):
+        self.frame = {zid: QColor(*color) for zid, color in frame.items()}
+        self.update()
+
+    def _alien_mask(self, diameter):
+        mask = self._alien_masks.get(diameter)
+        if mask is not None:
+            return mask
+        source = QImage(diameter, diameter, QImage.Format_ARGB32_Premultiplied)
+        source.fill(Qt.transparent)
+        painter = QPainter(source)
+        painter.setFont(QFont("Noto Color Emoji", max(16, int(diameter * .82))))
+        painter.drawText(source.rect(), Qt.AlignCenter, "👽")
+        painter.end()
+        for y in range(diameter):
+            for x in range(diameter):
+                pixel = source.pixelColor(x, y)
+                brightness = .299 * pixel.red() + .587 * pixel.green() + .114 * pixel.blue()
+                alpha = int(pixel.alpha() * max(0.0, min(1.0, (brightness - 35) / 185)))
+                source.setPixelColor(x, y, QColor(255, 255, 255, alpha))
+        self._alien_masks[diameter] = source
+        return source
+
+    def paintEvent(self, _event):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        area = self.rect().adjusted(10, 8, -10, -8)
+        p.fillRect(area, QColor("#111317"))
+        body = QRectF(area.left(), area.top(), area.width(), area.height())
+        p.setPen(QPen(QColor("#363a42"), 2))
+        p.setBrush(QColor("#1b1f26"))
+        p.drawRoundedRect(body, 14, 14)
+
+        touch = self.frame.get(engine.ZONES["touchpad"], QColor("#000000"))
+        pad = QRectF(body.left() + body.width() * .09, body.top() + body.height() * .27,
+                     body.width() * .47, body.height() * .52)
+        p.setPen(QPen(touch.lighter(145), 2))
+        p.setBrush(QColor(touch.red(), touch.green(), touch.blue(), 75))
+        p.drawRoundedRect(pad, 10, 10)
+        p.setPen(QColor("#9ea4ae"))
+        p.drawText(QRectF(pad.left(), pad.bottom() + 3, pad.width(), 18), Qt.AlignCenter, _("Touchpad"))
+
+        head_color = self.frame.get(engine.ZONES["logo"], QColor("#000000"))
+        cx, cy = body.left() + body.width() * .77, body.top() + body.height() * .5
+        size = min(body.width(), body.height()) * .34
+        p.setPen(QPen(head_color.lighter(150), 2))
+        p.setBrush(QColor(head_color.red(), head_color.green(), head_color.blue(), 100))
+        p.drawEllipse(QRectF(cx - size, cy - size, size * 2, size * 2))
+        mask = self._alien_mask(max(32, int(size * 2.2)))
+        alien = QPixmap.fromImage(mask)
+        tint = QPixmap(alien.size())
+        tint.fill(Qt.transparent)
+        tinted = QPainter(tint)
+        tinted.drawPixmap(0, 0, alien)
+        tinted.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        tinted.fillRect(tint.rect(), head_color)
+        tinted.end()
+        p.drawPixmap(QRectF(cx - size, cy - size * 1.08, size * 2, size * 2), tint,
+                     QRectF(0, 0, tint.width(), tint.height()))
+        p.setPen(QColor("#9ea4ae"))
+        p.drawText(QRectF(cx - size, cy + size + 3, size * 2, 18), Qt.AlignCenter, _("Alien head"))
 
 
 class Swatch(QToolButton):
@@ -557,7 +630,15 @@ class MainWindow(QMainWindow):
         note.setWordWrap(True)
         note.setStyleSheet("color:#999;")
         v.addWidget(note)
+        preview_group = QGroupBox(_("Chassis preview"))
+        preview_layout = QVBoxLayout(preview_group)
+        self.chassis_preview = ChassisPreview()
+        preview_layout.addWidget(self.chassis_preview)
+        v.addWidget(preview_group)
         self.fx_widgets = {}
+        self.fx_fan_widgets = {}
+        self.fx_message_widgets = {}
+        self.fx_message_labels = {}
         for zone, title, choices in (("keyboard", _("Keyboard"), effects.KEYBOARD_EFFECTS),
                                      ("touchpad", _("Touchpad"), effects.ZONE_EFFECTS),
                                      ("logo", _("Alien head (logo on the lid)"), effects.ZONE_EFFECTS)):
@@ -570,6 +651,18 @@ class MainWindow(QMainWindow):
             sl.setRange(1, 50)
             f.addRow(_("Effect:"), cb)
             f.addRow(_("Speed:"), sl)
+            if zone != "keyboard":
+                message = QLineEdit()
+                message.setPlaceholderText(_("Message to transmit"))
+                message.editingFinished.connect(lambda z=zone: self.on_morse_message_changed(z))
+                message_label = QLabel(_("Morse message:"))
+                f.addRow(message_label, message)
+                self.fx_message_widgets[zone] = message
+                self.fx_message_labels[zone] = message_label
+                follow_fans = QCheckBox(_("Breathing follows fans"))
+                follow_fans.toggled.connect(lambda *_a, z=zone: self.on_fan_reactive_changed(z))
+                f.addRow(follow_fans)
+                self.fx_fan_widgets[zone] = follow_fans
             cb.currentIndexChanged.connect(lambda *_a, z=zone: self.on_fx_changed(z))
             sl.valueChanged.connect(lambda *_a, z=zone: self.on_fx_changed(z))
             self.fx_widgets[zone] = (cb, sl)
@@ -736,7 +829,7 @@ class MainWindow(QMainWindow):
         row.addWidget(b)
         f.addRow(row)
         self.sp_fps = QSpinBox()
-        self.sp_fps.setRange(1, 20)
+        self.sp_fps.setRange(40, 50)
         self.sp_fps.setValue(self.cfg["fps"])
         self.sp_fps.setSuffix(" fps")
         self.sp_fps.valueChanged.connect(self.on_options)
@@ -806,6 +899,9 @@ class MainWindow(QMainWindow):
             fx = p["keyboard_effect"] if zone == "keyboard" else p["chassis"][zone]
             cb.setCurrentIndex(max(0, cb.findData(fx["effect"])))
             sl.setValue(int(round(fx["speed"] * 10)))
+            if zone in self.fx_fan_widgets:
+                self.fx_fan_widgets[zone].setChecked(fx["fan_reactive"])
+                self.fx_message_widgets[zone].setText(fx["message"])
         for zone, c in self.zone_color.items():
             c.setColor(p["chassis"][zone]["color"])
         self.btn_pw_ac.setColor(p["chassis"]["power"]["ac"])
@@ -1052,6 +1148,7 @@ class MainWindow(QMainWindow):
         if self._loading:
             return
         self.profile["brightness"] = v
+        self._update_effect_ui()
         self.changed()
 
     # ------------------------------------------------------------ effects
@@ -1064,17 +1161,43 @@ class MainWindow(QMainWindow):
         self._update_effect_ui()
         self.changed()
 
+    def on_fan_reactive_changed(self, zone):
+        if self._loading:
+            return
+        self.profile["chassis"][zone]["fan_reactive"] = self.fx_fan_widgets[zone].isChecked()
+        self.changed()
+
+    def on_morse_message_changed(self, zone):
+        if self._loading:
+            return
+        self.profile["chassis"][zone]["message"] = self.fx_message_widgets[zone].text()
+        self._update_effect_ui()
+        self.changed()
+
     def _update_effect_ui(self):
+        for zone, check in self.fx_fan_widgets.items():
+            effect = self.fx_widgets[zone][0].currentData()
+            self.fx_widgets[zone][1].setEnabled(effect != "audio")
+            check.setEnabled(effect == "breathing")
+            show_message = effect == "morse"
+            self.fx_message_widgets[zone].setVisible(show_message)
+            self.fx_message_labels[zone].setVisible(show_message)
         self._restart_anim()
         self.kb.update()
 
     def _restart_anim(self):
         try:
-            self.anim_fx = engine.keyboard_animation(profiles.normalize(self.profile))
+            profile = profiles.normalize(self.profile)
+            self.anim_fx = engine.keyboard_animation(profile)
+            self.anim_zones = engine.zone_animations(profile)
+            self.anim_zone_base = engine.zone_colors(profile)
         except (ValueError, profiles.ProfileError):
             self.anim_fx = None
-        if self.anim_fx:
-            self.anim_t0 = time.monotonic()
+            self.anim_zones = {}
+            self.anim_zone_base = {}
+        self.anim_t0 = time.monotonic()
+        self.chassis_preview.set_frame(self.anim_zone_base)
+        if self.anim_fx or self.anim_zones:
             self.anim_timer.setInterval(int(1000 / self.cfg["fps"]))
             self.anim_timer.start()
             return
@@ -1082,16 +1205,24 @@ class MainWindow(QMainWindow):
         self.kb.preview = None
 
     def _animate(self):
-        if not self.anim_fx or not self.isVisible():
+        if not self.isVisible():
             return
-        fr = self.anim_fx.frame(time.monotonic() - self.anim_t0)
-        f = max(0.15, self.profile["brightness"] / 100.0)  # keeps the preview readable at low brightness
-        prev = {}
-        for k in layout.KEYS:
-            c = fr.get(k.id)
-            if c is not None:
-                prev[k.id] = QColor(*(min(255, int(x / f)) for x in c))
-        self.kb.preview = prev
+        t = time.monotonic() - self.anim_t0
+        if self.anim_fx:
+            fr = self.anim_fx.frame(t)
+            f = max(0.15, self.profile["brightness"] / 100.0)  # keeps the preview readable at low brightness
+            prev = {}
+            for k in layout.KEYS:
+                c = fr.get(k.id)
+                if c is not None:
+                    prev[k.id] = QColor(*(min(255, int(x / f)) for x in c))
+            self.kb.preview = prev
+        frame = dict(self.anim_zone_base)
+        for anim in self.anim_zones.values():
+            if anim.name == "audio":
+                anim.set_level(0.5 + 0.5 * math.sin(t * 5))
+            frame.update(anim.frame(t))
+        self.chassis_preview.set_frame(frame)
         self.kb.update()
 
     # ------------------------------------------------------------ chassis
@@ -1099,6 +1230,7 @@ class MainWindow(QMainWindow):
         if self._loading:
             return
         self.profile["chassis"][zone]["color"] = self.zone_color[zone].color()
+        self._update_effect_ui()
         self.changed()
 
     def on_power_changed(self, *_a):

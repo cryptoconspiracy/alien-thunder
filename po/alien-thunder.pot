@@ -420,6 +420,42 @@ msgstr ""
 msgid "Speed:"
 msgstr ""
 
+#: alien_thunder/gui.py
+msgid "Breathing follows fans"
+msgstr ""
+
+#: alien_thunder/gui.py
+msgid "Chassis preview"
+msgstr ""
+
+#: alien_thunder/gui.py
+msgid "Alien head"
+msgstr ""
+
+#: alien_thunder/effects.py
+msgid "Morse code"
+msgstr ""
+
+#: alien_thunder/effects.py
+msgid "Ambulance"
+msgstr ""
+
+#: alien_thunder/effects.py
+msgid "Police"
+msgstr ""
+
+#: alien_thunder/effects.py
+msgid "Follow default audio"
+msgstr ""
+
+#: alien_thunder/gui.py
+msgid "Message to transmit"
+msgstr ""
+
+#: alien_thunder/gui.py
+msgid "Morse message:"
+msgstr ""
+
 #: alien_thunder/gui.py:592
 msgid "Power button"
 msgstr ""

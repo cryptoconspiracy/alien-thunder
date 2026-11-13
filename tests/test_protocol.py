@@ -7,6 +7,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
@@ -142,6 +143,40 @@ class Layout(unittest.TestCase):
 
 
 class Profiles(unittest.TestCase):
+    def test_breathing_fades_in_small_steps(self):
+        samples = [effects.breathing(i / 40, 1.1) for i in range(int(40 * effects.BREATH_CYCLE_SECONDS))]
+        step = max(abs(b - a) for a, b in zip(samples, samples[1:]))
+        self.assertLessEqual(step * 255, 2)
+
+    def test_fan_breath_speed_bands(self):
+        self.assertEqual([effects.fan_breath_speed(rpm) for rpm in (0, 2000, 3000, 4600, 5000, 5001)],
+                         [None, 0.35, 0.7, 1.2, 2.4, 4.8])
+
+    def test_morse_uses_the_requested_message(self):
+        fx = effects.Animation("morse", {0: (255, 0, 0)}, 1.0, message="E")
+        self.assertEqual(fx.frame(0)[0], (255, 0, 0))
+        self.assertEqual(fx.frame(.2)[0], (0, 0, 0))
+
+    def test_new_chassis_effects_are_valid(self):
+        for name in ("ambulance", "police", "audio"):
+            self.assertIn(name, effects.ZONE_EFFECTS)
+            self.assertEqual(set(effects.Animation(name, {0: (1, 2, 3)}, 1.0).frame(0)), {0})
+
+    def test_audio_effect_ignores_speed(self):
+        slow = effects.Animation("audio", {0: (255, 0, 0)}, 0.1)
+        fast = effects.Animation("audio", {0: (255, 0, 0)}, 5.0)
+        slow.set_level(1)
+        fast.set_level(1)
+        self.assertEqual(fast.level, slow.level)
+
+    def test_software_effect_rate_stays_fluid(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config = os.path.join(tmp, "config.json")
+            with open(config, "w", encoding="utf-8") as f:
+                json.dump({"fps": 15}, f)
+            with mock.patch.object(profiles.paths, "CONFIG_FILE", config):
+                self.assertEqual(profiles.load_config()["fps"], 40)
+
     def test_legacy_import(self):
         g = golden("devops_legacy_profile.json")
         p = profiles.from_legacy(g["profile"])
@@ -183,8 +218,10 @@ class Profiles(unittest.TestCase):
         p = profiles.normalize(v2)
         # rainbow painted over the chosen colors; nothing in version 3 does
         self.assertEqual(p["keyboard_effect"], {"effect": "static", "speed": 2.0})
-        self.assertEqual(p["chassis"]["touchpad"], {"effect": "breathing", "color": "#112233", "speed": 1.0})
-        self.assertEqual(p["chassis"]["logo"], {"effect": "pulse", "color": "#445566", "speed": 1.0})
+        self.assertEqual(p["chassis"]["touchpad"], {"effect": "breathing", "color": "#112233", "speed": 1.0,
+                                                       "fan_reactive": False, "message": "SOS"})
+        self.assertEqual(p["chassis"]["logo"], {"effect": "pulse", "color": "#445566", "speed": 1.0,
+                                                   "fan_reactive": False, "message": "SOS"})
         self.assertEqual(p["keyboard"], {"1": "#9900ba"})
 
     def test_effects_keep_the_colors(self):
@@ -215,6 +252,20 @@ class _Fake:
 
     def __getattr__(self, name):
         return lambda *a, **k: self.calls.append((name, a))
+
+
+class FanReactiveChassis(unittest.TestCase):
+    def test_fan_reactive_zone_turns_off_and_changes_speed(self):
+        prof = profiles.normalize({"chassis": {"touchpad": {"effect": "breathing", "color": "#ff2900",
+                                                              "fan_reactive": True}}})
+        eng = engine.Engine(log=lambda m: None)
+        eng.kb = eng.ch = _Fake()
+        eng.state.data["keyboard_hw_effect"] = False
+        eng.apply(prof)
+        eng.set_fan_rpm(0, 0)
+        self.assertEqual(eng._zone_frame(1)[protocol.ZONE_TOUCHPAD], (0, 0, 0))
+        eng.set_fan_rpm(2500, 1200)
+        self.assertEqual(eng.sw_zones[protocol.ZONE_TOUCHPAD].speed, 0.7)
 
 
 class GMode(unittest.TestCase):

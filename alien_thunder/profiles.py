@@ -21,8 +21,10 @@ DEFAULT_PROFILE = {
     "keyboard": {},
     "keyboard_effect": {"effect": "static", "speed": 1.0},
     "chassis": {
-        "touchpad": {"effect": "static", "color": DEFAULT_COLOR, "speed": 1.0},
-        "logo": {"effect": "static", "color": DEFAULT_COLOR, "speed": 1.0},
+        "touchpad": {"effect": "static", "color": DEFAULT_COLOR, "speed": 1.0, "fan_reactive": False,
+                     "message": "SOS"},
+        "logo": {"effect": "static", "color": DEFAULT_COLOR, "speed": 1.0, "fan_reactive": False,
+                 "message": "SOS"},
         "power": {"ac": DEFAULT_COLOR, "battery": DEFAULT_COLOR},
     },
     "keys": [],  # [{"scan": HID usage, "action": one of mediakeys.ACTIONS}]
@@ -33,7 +35,7 @@ DEFAULT_CONFIG = {
     "active_profile": None,
     "recent_colors": [],
     "groups": {},
-    "fps": 15,
+    "fps": 40,
     "chassis_backend": "hidraw",  # hidraw | alienrgb (static colors only)
 }
 
@@ -177,6 +179,8 @@ def normalize(p: dict) -> dict:
             zz["effect"] = "static"
         zz["color"] = norm_hex(zz["color"])
         zz["speed"] = max(0.1, min(5.0, float(zz["speed"])))
+        zz["fan_reactive"] = bool(zz.get("fan_reactive", False))
+        zz["message"] = str(zz.get("message", "SOS"))[:160]
     pw = out["chassis"]["power"]
     pw["ac"], pw["battery"] = norm_hex(pw["ac"]), norm_hex(pw["battery"])
     keys, seen = [], set()
@@ -297,7 +301,9 @@ def load_config() -> dict:
             cfg.update(from_v1(json.load(f)))
     except (FileNotFoundError, ValueError):
         pass
-    cfg["fps"] = max(1, min(20, int(cfg.get("fps", 15))))
+    # Each keyboard frame needs a controller sync, so 50 fps is its practical
+    # ceiling.  Below 40 fps the individual PWM steps are visible as jumps.
+    cfg["fps"] = max(40, min(50, int(cfg.get("fps", 40))))
     if cfg.get("chassis_backend") not in ("hidraw", "alienrgb"):
         cfg["chassis_backend"] = "hidraw"
     cfg["version"] = VERSION

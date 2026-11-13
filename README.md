@@ -128,9 +128,18 @@ the keyboard changes as you edit.
 
 The **Effects** tab has one effect and one speed for the keyboard, one for the touchpad
 and one for the alien head; the background service draws them, and they only dim and
-brighten the colors you picked. **Import from Windows** reads the
+brighten the colors you picked. For the touchpad and alien head, **Breathing follows
+fans** uses the faster CPU/GPU fan: stopped fans turn the light off, then the breath
+gets progressively faster through 2,000, 3,000, 4,600 and 5,000 RPM. **Import from Windows** reads the
 presets you made in the Alienware Command Center, if your Windows partition is
 mounted at `/mnt/windows`; it only reads, it never writes there.
+
+The same tab has a small chassis simulator: its touchpad and Alien head reproduce the
+chosen color and each selected effect before it is applied to the laptop.
+
+The chassis also has Morse code (with a text field per item), ambulance and police
+flash patterns, plus **Follow default audio**, which reacts to the volume playing on
+the system's default audio output through PipeWire/PulseAudio.
 
 ## Install
 
