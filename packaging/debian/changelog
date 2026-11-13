@@ -1,3 +1,10 @@
+alien-thunder (1.3.2-1) unstable; urgency=medium
+
+  * Add reactive chassis lighting effects
+  * make packages: wait for OBS by the built files, not its final state, and resume a stopped release
+
+ -- Dan B <unknown@cryptoconspiracy.io>  Thu, 12 Nov 2026 23:12:40 -0300
+
 alien-thunder (1.3.1-1) unstable; urgency=medium
 
   * Allow horizontal or vertical desktop gauges with independent settings

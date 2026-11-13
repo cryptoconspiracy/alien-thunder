@@ -1,5 +1,5 @@
 Name:           alien-thunder
-Version:        1.3.1
+Version:        1.3.2
 Release:        1%{?dist}
 Summary:        Per-key RGB, G-Mode and fan and temperature readouts for Alienware laptops
 License:        MIT
@@ -79,6 +79,10 @@ rm -f %{buildroot}%{_datadir}/licenses/%{name}/LICENSE
 %{_datadir}/plasma/plasmoids/alien-thunder-network/
 
 %changelog
+* Thu Nov 12 2026 Dan B <unknown@cryptoconspiracy.io> - 1.3.2-1
+- Add reactive chassis lighting effects
+- make packages: wait for OBS by the built files, not its final state, and resume a stopped release
+
 * Wed Oct 14 2026 Dan B <unknown@cryptoconspiracy.io> - 1.3.1-1
 - Allow horizontal or vertical desktop gauges with independent settings
 
